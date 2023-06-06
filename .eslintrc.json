@@ -1,0 +1,63 @@
+// {
+//   "extends": [
+//     "airbnb",
+//     "airbnb/hooks",
+//     "eslint:recommended",
+//     "plugin:prettier/recommended",
+//     "plugin:@typescript-eslint/recommended",
+//     "next"
+//   ],
+//   "plugins": ["prettier", "@typescript-eslint", "import"],
+//   "rules": {
+//     "eqeqeq": "error",
+//     "no-console": "warn",
+//     "no-undef": "off",
+//     "no-unused-vars": "off",
+//     "prettier/prettier": "error",
+//     "import/no-unresolved": "error",
+//     "react/jsx-filename-extension": [0, { "extensions": [".tsx"] }],
+//     "react/react-in-jsx-scope": "off",
+//     "react/jsx-props-no-spreading": [0, { "html": "ignore", "custom": "ignore", "explicitSpread": "ignore" }],
+//     "no-use-before-define": 0,
+//     "@typescript-eslint/no-use-before-define": 2,
+//     "@typescript-eslint/explicit-module-boundary-types": "off",
+//     "@typescript-eslint/explicit-function-return-type": "off",
+//     "@typescript-eslint/no-explicit-any": "error",
+//     "@typescript-eslint/no-unused-vars": "warn",
+//     "@typescript-eslint/no-empty-interface": "off",
+//     "import/order": [
+//       2,
+//       {
+//         "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+//         "newlines-between": "always"
+//       }
+//     ],
+//     "import/newline-after-import": 1
+//   },
+//   "parser": "@typescript-eslint/parser",
+//   "settings": {
+//     "import/parsers": {
+//       "@typescript-eslint/parser": [".ts", ".tsx"]
+//     },
+//     "import/resolver": {
+//       "typescript": {
+//         "project": "./tsconfig.eslint.json"
+//       }
+//     }
+//   },
+//   "env": {
+//     "browser": true,
+//     "node": true,
+//     "es6": true,
+//     "jest": true
+//   },
+//   "ignorePatterns": ["node_modules", "build", "dist", "public"]
+// }
+
+{
+  "extends": ["next", "prettier", "next/core-web-vitals"],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-page-custom-font": "off"
+  }
+}
