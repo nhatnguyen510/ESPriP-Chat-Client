@@ -3,9 +3,9 @@
 import * as React from "react";
 import { useState } from "react";
 import { useForm, FieldValues, SubmitHandler } from "react-hook-form";
-import Input from "../components/Input";
+import Input from "../../components/Input";
 import { signIn } from "next-auth/react";
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <>
-      <div className="flex h-screen w-full items-center justify-center bg-neutral-100">
+      <div className="flex h-screen w-full items-center justify-center bg-gray-200">
         <div className="flex w-[400px] flex-col items-center justify-center gap-6">
           <div className="w-full">
             <h3 className="text-center text-4xl">Login</h3>

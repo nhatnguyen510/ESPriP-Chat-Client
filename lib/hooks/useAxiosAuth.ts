@@ -52,7 +52,10 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
       if (error?.response?.status === 403) {
         console.log("Access token: ", prevRequest?.headers?.Authorization);
         try {
-          const newAccessToken = await refreshToken();
+          const {
+            access_token: newAccessToken,
+            refresh_token: newRefreshToken,
+          } = await refreshToken();
 
           console.log("New access token: ", newAccessToken);
           if (newAccessToken) {
@@ -62,6 +65,7 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
             } as InternalAxiosRequestConfig["headers"];
             console.log("Prev request: ", prevRequest);
             user!.access_token = newAccessToken;
+            user!.refresh_token = newRefreshToken;
             return axiosInstance(prevRequest);
           }
         } catch (err) {

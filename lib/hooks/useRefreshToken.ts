@@ -10,7 +10,10 @@ const useRefreshToken = (user: CurrentUserReturnType) => {
         refresh_token: user?.refresh_token,
       });
 
-      return res.data.access_token as string;
+      return {
+        access_token: res.data.access_token,
+        refresh_token: res.data.refresh_token,
+      };
     } catch (err) {
       console.log("Something went wrong while refreshing token: ", err);
       return Promise.reject(err);
