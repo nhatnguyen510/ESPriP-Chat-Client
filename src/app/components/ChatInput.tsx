@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import useAxiosAuth from "../../../lib/hooks/useAxiosAuth";
-import { CurrentUserReturnType } from "../../../lib/session";
-import { useChatContext } from "../../../context/ChatProvider";
-import socket from "../../../lib/socket";
+import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
+import { CurrentUserReturnType } from "@/../lib/session";
+import { useChatContext } from "@/../context/ChatProvider";
+import socket from "@/../lib/socket";
 import { useSession } from "next-auth/react";
 
 type chatInputProps = {
@@ -14,7 +14,8 @@ type chatInputProps = {
 const ChatInput: React.FC<chatInputProps> = ({ user }) => {
   const [textInput, setTextInput] = useState<string>("");
   const axiosAuth = useAxiosAuth(user);
-  const { currentChat, setMessages, selectedUser } = useChatContext();
+  const { currentChat, setMessages, selectedUser, setConversations } =
+    useChatContext();
 
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTextInput(e.target.value);
@@ -30,17 +31,35 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
           sender_id: user?.id,
           message: textInput,
         });
-        console.log({ res });
+        const sentMessage = res.data.savedMessage;
+        const updatedConversation = res.data.updatedConversation;
+
+        console.log({ sentMessage, updatedConversation });
 
         socket.emit("sendMessage", {
-          id: res.data._id,
-          conversation_id: res.data.conversation_id,
+          id: sentMessage._id,
+          conversation_id: sentMessage.conversation_id,
           sender_id: user?.id,
           receiver_id: selectedUser?._id,
+          seen: sentMessage.seen,
           message: textInput,
+          lastMessage: updatedConversation.lastMessage,
+          lastMessageAt: updatedConversation.lastMessageAt,
         });
 
-        setMessages?.((prev) => [...prev, res.data]);
+        setMessages?.((prev) => [...prev, sentMessage]);
+
+        // Update lastMessage and lastMessageAt in conversations
+        setConversations?.((prev) => {
+          const index = prev.findIndex(
+            (conversation) => conversation._id == updatedConversation._id
+          );
+          const newConversations = [...prev];
+          newConversations[index].lastMessageAt =
+            updatedConversation.lastMessageAt;
+          newConversations[index].lastMessage = updatedConversation.lastMessage;
+          return newConversations;
+        });
 
         setTextInput("");
       }
@@ -51,7 +70,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
 
   return (
     <>
-      <div className="mb-2 h-16 border-t-2 border-gray-200 px-4 pt-4 sm:mb-0">
+      <div className="mb-2 h-16 border-t-2 border-gray-200 p-2">
         <div className="relative flex rounded-xl bg-gray-200">
           <span className="flex items-center">
             <button

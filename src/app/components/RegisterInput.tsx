@@ -1,7 +1,6 @@
 // Remove the import for `react-hook-form` related types and imports.
 
 import { VscEye, VscEyeClosed } from "react-icons/vsc";
-import { FormData } from "../../../lib/validation/registerSchema";
 import LoadingSpinner from "./LoadingSpinner";
 import { useState } from "react";
 import { Controller } from "react-hook-form";

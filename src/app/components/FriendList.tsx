@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Friend from "./Friend";
-import { FriendType } from "../../../types/types";
-import useAxiosAuth from "../../../lib/hooks/useAxiosAuth";
-import { useChatContext } from "../../../context/ChatProvider";
-import socket from "../../../lib/socket";
+import { FriendType } from "@/../types/types";
+import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
+import { useChatContext } from "@/../context/ChatProvider";
+import socket from "@/../lib/socket";
 import { useSession } from "next-auth/react";
-import { CurrentUserReturnType } from "../../../lib/session";
+import { CurrentUserReturnType } from "@/../lib/session";
 
 type friendListProps = {
   user?: CurrentUserReturnType;
@@ -113,10 +113,6 @@ const FriendList: React.FC<friendListProps> = ({ user }) => {
               first_name={friend.first_name}
               last_name={friend.last_name}
               avatarUrl={friend.avatarUrl}
-              lastMessage={friend.lastMessage}
-              isOnline={onlineFriends?.some(
-                (friendId) => friendId === friend._id
-              )}
             />
           </div>
         ))}

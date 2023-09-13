@@ -4,8 +4,8 @@ import * as React from "react";
 import ChatHeader from "./ChatHeader";
 import ChatHistory from "./ChatHistory";
 import ChatInput from "./ChatInput";
-import { useChatContext } from "../../../context/ChatProvider";
-import { CurrentUserReturnType } from "../../../lib/session";
+import { useChatContext } from "@/../context/ChatProvider";
+import { CurrentUserReturnType } from "@/../lib/session";
 
 type ChatSectionProps = {
   user?: CurrentUserReturnType;

@@ -1,5 +1,5 @@
-import { NextAuthProvider } from "../../context/NextAuthProvider";
-import { ToastProvider } from "../../context/ToastProvider";
+import { NextAuthProvider } from "@/../context/NextAuthProvider";
+import { ToastProvider } from "@/../context/ToastProvider";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";

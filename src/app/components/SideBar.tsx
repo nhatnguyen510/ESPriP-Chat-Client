@@ -1,57 +1,70 @@
 "use client";
 
-import React from "react";
-import { CurrentUserReturnType } from "../../../lib/session";
-import FriendList from "./FriendList";
-import UserSettings from "./UserSettings";
-import { useSession } from "next-auth/react";
+import DesktopItem from "./DesktopItem";
+import useRoutes from "@/../lib/hooks/useRoutes";
+import SettingsModal from "./SettingsModal";
+import { useState } from "react";
+import Avatar from "./Avatar";
+import { CurrentUserReturnType } from "@/../lib/session";
 
-type sideBarProps = {
-  user?: CurrentUserReturnType;
-};
+interface DesktopSidebarProps {
+  currentUser: CurrentUserReturnType;
+}
 
-const SideBar: React.FC<sideBarProps> = ({ user }) => {
-  const fakeFriendsData = [
-    {
-      id: 1,
-      avatarUrl:
-        "https://images.unsplash.com/photo-1549078642-b2ba4bda0cdb?ixlib=rb-1.2.1&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;auto=format&amp;fit=facearea&amp;facepad=3&amp;w=144&amp;h=144",
-      name: "Friend 1",
-      message: "Last message sent by Friend 1",
-      isOnline: true,
-    },
-    {
-      id: 2,
-      avatarUrl:
-        "https://images.unsplash.com/photo-1549078642-b2ba4bda0cdb?ixlib=rb-1.2.1&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;auto=format&amp;fit=facearea&amp;facepad=3&amp;w=144&amp;h=144",
-      name: "Friend 2",
-      message: "Last message sent by Friend 2",
-      isOnline: false,
-    },
-    {
-      id: 3,
-      avatarUrl:
-        "https://images.unsplash.com/photo-1549078642-b2ba4bda0cdb?ixlib=rb-1.2.1&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;auto=format&amp;fit=facearea&amp;facepad=3&amp;w=144&amp;h=144",
-      name: "Friend 3",
-      message: "Last message sent by Friend 3",
-      isOnline: true,
-    },
-  ];
+const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentUser }) => {
+  const routes = useRoutes(currentUser);
+  const [isOpen, setIsOpen] = useState(false);
+
+  console.log({ currentUser }, "TEST");
 
   return (
-    <div className="flex h-full flex-col items-center justify-center border-r p-4">
-      <h2 className="mb-4 text-lg font-bold">Messages</h2>
-      <div className="mb-4 w-full">
-        <input
-          type="text"
-          placeholder="Search friend"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+    <>
+      <SettingsModal
+        currentUser={currentUser}
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+      />
+      <div
+        className="
+        lg:w-30 
+        hidden 
+        justify-between 
+        lg:fixed 
+        lg:inset-y-0 
+        lg:left-0 
+        lg:z-40
+        lg:flex 
+        lg:flex-col 
+        lg:border-r-[1px]
+        lg:bg-white
+        lg:pb-4
+      "
+      >
+        <nav className="mt-4 flex w-full flex-col justify-between">
+          <ul role="list" className="flex flex-col items-start space-y-1">
+            {routes.map((item) => (
+              <DesktopItem
+                key={item.label}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={item.active}
+                onClick={item.onClick}
+              />
+            ))}
+          </ul>
+        </nav>
+        <nav className="mt-4 flex w-full flex-col items-center justify-between">
+          <div
+            onClick={() => setIsOpen(true)}
+            className="cursor-pointer transition hover:opacity-75"
+          >
+            <Avatar />
+          </div>
+        </nav>
       </div>
-      <FriendList user={user} />
-      <UserSettings user={user} />
-    </div>
+    </>
   );
 };
 
-export default SideBar;
+export default DesktopSidebar;

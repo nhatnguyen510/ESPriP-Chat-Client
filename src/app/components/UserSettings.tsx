@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { CurrentUserReturnType } from "../../../lib/session";
+import { CurrentUserReturnType } from "@/../lib/session";
 import { AiOutlineSetting } from "react-icons/ai";
 import { IoLogOutOutline } from "react-icons/io5";
 import { signOut, useSession } from "next-auth/react";
-import useAxiosAuth from "../../../lib/hooks/useAxiosAuth";
+import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { useRouter } from "next/navigation";
 
 type userSettingsProps = {

@@ -1,7 +1,9 @@
 import React from "react";
 import SideBar from "../components/SideBar";
 import ChatSection from "../components/ChatSection";
-import { getCurrentUser } from "../../../lib/session";
+import { getCurrentUser } from "@/../lib/session";
+import UserFriendList from "../components/UserFriendList";
+import MessageSection from "../components/MessageSection";
 
 export interface chatProps {}
 
@@ -10,10 +12,11 @@ export default async function Chat(props: chatProps) {
 
   return (
     <>
-      <div className="flex h-screen flex-1 flex-col justify-between p-2 sm:p-6">
+      <div className="flex h-screen flex-1 flex-col justify-between">
         <div className="flex h-full">
-          <div className="w-3/12">
-            <SideBar user={user} />
+          <SideBar currentUser={user} />
+          <div className="w-3/12 lg:ml-32">
+            <MessageSection user={user} />
           </div>
           <div className="flex w-9/12 flex-col">
             <ChatSection user={user} />

@@ -8,7 +8,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { yupResolver } from "@hookform/resolvers/yup";
-import schema, { FormData } from "../../../../lib/validation/registerSchema";
+import schema, { FormData } from "@/../lib/validation/registerSchema";
 import { toast } from "react-toastify";
 
 export default function Register() {

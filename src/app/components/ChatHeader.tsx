@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { useChatContext } from "../../../context/ChatProvider";
+import { useChatContext } from "@/../context/ChatProvider";
 
 type chatHeaderProps = {};
 
@@ -15,7 +15,7 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
 
   return (
     <>
-      <div className="flex h-24 justify-between border-b-2 border-gray-200 py-3 sm:items-center">
+      <div className="flex h-24 justify-between border-b-2 border-gray-200 p-3 sm:items-center">
         <div className="relative flex items-center space-x-4">
           <div className="relative">
             <div
