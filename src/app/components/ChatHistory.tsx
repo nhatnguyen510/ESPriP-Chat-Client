@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect, useRef } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import { MessageProps } from "@/../types/types";
@@ -8,6 +8,9 @@ import { CurrentUserReturnType } from "@/../lib/session";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import socket from "@/../lib/socket";
 import { useChatContext } from "@/../context/ChatProvider";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { debounce } from "lodash";
+import LoadingSpinner from "./LoadingSpinner";
 
 type chatHistoryProps = {
   user?: CurrentUserReturnType;
@@ -25,13 +28,54 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   } = useChatContext();
   const axiosAuth = useAxiosAuth(user);
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
+  const oldMessageRef = useRef<HTMLDivElement | null>(null);
 
-  const lastMessage = messages?.[messages?.length - 1]?.message;
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isOldMessageVisible, setIsOldMessageVisible] =
+    useState<boolean>(false);
+
+  const lastMessage = messages?.[messages?.length - 1];
 
   const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
 
   const isOwnLastMessage =
     messages?.[messages?.length - 1]?.sender_id === user?.id;
+
+  // Function to fetch more messages when scrolling to the top
+  const fetchMoreMessages = async () => {
+    if (messages!.length % 20 !== 0) {
+      return;
+    }
+
+    const { data } = await axiosAuth.get(
+      `/chat/conversation/message/${currentChat?._id}`,
+      {
+        params: {
+          page: Math.ceil((messages?.length || 0) / 20) + 1,
+          limit: 20,
+        },
+      }
+    );
+
+    console.log("fetchMoreMessages", { data });
+
+    setMessages?.((prev) => [...data, ...prev]);
+  };
+
+  const handleScroll = async (e: React.UIEvent<HTMLDivElement, UIEvent>) => {
+    const element = e.target as HTMLDivElement;
+
+    if (element.scrollTop === 0 && !loading) {
+      setLoading(true);
+
+      // wait for 2 seconds before fetching more messages
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      await fetchMoreMessages();
+
+      setLoading(false);
+    }
+  };
 
   // Fetch messages for current conversation
   useEffect(() => {
@@ -39,7 +83,13 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
       console.log({ currentChat });
       if (currentChat?._id) {
         const { data } = await axiosAuth.get(
-          `/chat/conversation/message/${currentChat?._id}`
+          `/chat/conversation/message/${currentChat?._id}`,
+          {
+            params: {
+              page: 1,
+              limit: 20,
+            },
+          }
         );
 
         console.log("fetchMessages", { data });
@@ -55,7 +105,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   // Scroll to bottom of messages
   useEffect(() => {
     lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [selectedUser?._id]);
 
   // Mark messages as seen
   useEffect(() => {
@@ -175,22 +225,67 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat?._id]);
 
-  console.log({ lastMessage, isOwnLastMessage, isLastMessageSeen });
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        setIsOldMessageVisible(entry.isIntersecting);
+      },
+      {
+        root: null, // Use the viewport as the root
+        rootMargin: "0px",
+        threshold: 1.0, // Fire when 100% of the target is visible
+      }
+    );
+
+    const currentRef = oldMessageRef.current; // Copy the ref value to a variable
+
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    // Cleanup the observer when the component unmounts
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOldMessageVisible && !loading) {
+      setLoading(true);
+
+      fetchMoreMessages();
+
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOldMessageVisible, loading]);
+
+  console.log({ isOldMessageVisible });
 
   return (
     <>
       <div
         id="messages"
-        className="flex h-full flex-col space-y-4 overflow-y-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400"
+        className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400"
+        // onScroll={handleScroll}
       >
-        <div className="flex flex-auto"></div>
+        {loading && (
+          <div className="flex items-center justify-center">
+            <LoadingSpinner />
+          </div>
+        )}
+        <div ref={oldMessageRef}></div>
+
         {messages?.map((message) => {
           return (
             <ChatMessage
               key={message._id}
               message={message.message}
               isSentByUser={user?.id == message.sender_id}
-              isLastMessage={lastMessage === message.message}
+              isLastMessage={lastMessage?._id == message._id}
               isSeen={isLastMessageSeen}
             />
           );

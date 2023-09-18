@@ -1,6 +1,6 @@
 import { NextAuthProvider } from "@/../context/NextAuthProvider";
 import { ToastProvider } from "@/../context/ToastProvider";
-import { Inter, Montserrat } from "next/font/google";
+import { Inter, Montserrat, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -12,20 +12,28 @@ export const metadata = {
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
 });
 
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
+  display: "swap",
+});
+
+const roboto_mono = Roboto_Mono({
+  subsets: ["latin"],
+  variable: "--font-roboto-mono",
+  display: "swap",
 });
 
 function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html lang="en" className={`${inter.className}`}>
       <body>
         <NextAuthProvider>
           <ToastProvider>
-            <main className={`${inter.variable} font-sans`}>{children}</main>
+            <main>{children}</main>
           </ToastProvider>
         </NextAuthProvider>
       </body>

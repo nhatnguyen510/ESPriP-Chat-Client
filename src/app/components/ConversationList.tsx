@@ -145,7 +145,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
                 >
                   {isOwnLastMessage && conversation.lastMessage
                     ? `You: ${conversation.lastMessage?.message}`
-                    : `${conversation.lastMessage?.message}`}
+                    : `${conversation.lastMessage?.message || ""}`}
                 </p>
               </div>
             </div>

@@ -41,26 +41,26 @@ const FriendList: React.FC<friendListProps> = ({ user }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friendList?.length]);
 
-  useEffect(() => {
-    if (selectedUser?._id) {
-      //get conversation
-      const fetchChat = async () => {
-        try {
-          const { data } = await axiosAuth.get(
-            `/chat/conversation/${selectedUser._id}`
-          );
+  // useEffect(() => {
+  //   if (selectedUser?._id) {
+  //     //get conversation
+  //     const fetchChat = async () => {
+  //       try {
+  //         const { data } = await axiosAuth.get(
+  //           `/chat/conversation/${selectedUser._id}`
+  //         );
 
-          console.log("fetchChat", { data });
-          setCurrentChat?.({ ...data });
-        } catch (err) {
-          console.log(err);
-        }
-      };
+  //         console.log("fetchChat", { data });
+  //         setCurrentChat?.({ ...data });
+  //       } catch (err) {
+  //         console.log(err);
+  //       }
+  //     };
 
-      fetchChat();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUser?._id]);
+  //     fetchChat();
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [selectedUser?._id]);
 
   useEffect(() => {
     const onUserOnline = (data: { userId: string; status: string }) => {
