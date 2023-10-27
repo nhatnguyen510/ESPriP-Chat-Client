@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React, { useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import setFormattedTime from "@/../lib/hooks/useFormattedTime";
@@ -5,6 +6,7 @@ import { useChatContext } from "@/../context/ChatProvider";
 import { ConversationProps } from "@/../types/types";
 import { useSession } from "next-auth/react";
 import socket from "@/../lib/socket";
+import { useMessages } from "@/../lib/hooks/useMessages";
 
 interface ConversationListProps {}
 
@@ -35,65 +37,67 @@ const ConversationList: React.FC<ConversationListProps> = () => {
       );
     });
 
-  // Mark messages as seen
-  useEffect(() => {
-    const onMessagesSeen = (data: {
-      conversation_id: string;
-      sender_id: string;
-      seen: boolean;
-    }) => {
-      console.log("onMessagesSeen", { data });
+  // // Mark messages as seen
+  // useEffect(() => {
+  //   const onMessagesSeen = (data: {
+  //     conversation_id: string;
+  //     sender_id: string;
+  //     seen: boolean;
+  //   }) => {
+  //     console.log("onMessagesSeen", { data });
 
-      if (data.conversation_id === currentChat?._id) {
-        setMessages?.((messages) =>
-          messages?.map((message) => {
-            if (message.sender_id !== data.sender_id && !message.seen) {
-              return { ...message, seen: true };
-            }
+  //     if (data.conversation_id === currentChat?.id) {
+  //       setMessages?.((messages) =>
+  //         messages?.map((message) => {
+  //           if (message.sender_id !== data.sender_id && !message.seen) {
+  //             return { ...message, seen: true };
+  //           }
 
-            return message;
-          })
-        );
+  //           return message;
+  //         })
+  //       );
 
-        setCurrentChat?.((currentChat) => {
-          if (currentChat) {
-            return {
-              ...(currentChat as any),
-              lastMessage: {
-                ...currentChat.lastMessage,
-                seen: true,
-              },
-            };
-          }
+  //       setCurrentChat?.((currentChat) => {
+  //         if (currentChat) {
+  //           return {
+  //             ...(currentChat as any),
+  //             lastMessage: {
+  //               ...currentChat.lastMessage,
+  //               seen: true,
+  //             },
+  //           };
+  //         }
 
-          return currentChat;
-        });
-      }
+  //         return currentChat;
+  //       });
+  //     }
 
-      setConversations?.((conversations) =>
-        conversations?.map((conversation) => {
-          if (conversation._id === data.conversation_id) {
-            return {
-              ...(conversation as any),
-              lastMessage: {
-                ...conversation.lastMessage,
-                seen: true,
-              },
-            };
-          }
+  //     setConversations?.((conversations) =>
+  //       conversations?.map((conversation) => {
+  //         if (conversation.id === data.conversation_id) {
+  //           return {
+  //             ...(conversation as any),
+  //             lastMessage: {
+  //               ...conversation.lastMessage,
+  //               seen: true,
+  //             },
+  //           };
+  //         }
 
-          return conversation;
-        })
-      );
-    };
+  //         return conversation;
+  //       })
+  //     );
+  //   };
 
-    socket.on("messagesSeen", onMessagesSeen);
+  //   socket.on("messagesSeen", onMessagesSeen);
 
-    return () => {
-      socket.off("messagesSeen", onMessagesSeen);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversations, currentChat?._id, session?.user?.id]);
+  //   return () => {
+  //     socket.off("messagesSeen", onMessagesSeen);
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [conversations, currentChat?.id, session?.user?.id]);
+
+  console.log({ currentChat });
 
   return (
     <div
@@ -104,31 +108,41 @@ const ConversationList: React.FC<ConversationListProps> = () => {
       {sortedConversations?.length ? (
         sortedConversations.map((conversation) => {
           const friend = friendList?.find(
-            (friend) => conversation?.participants?.includes(friend?._id) || ""
+            (friend) =>
+              conversation?.participantsIds?.includes(friend?.id) || ""
           );
 
-          const isOnline = onlineFriends?.includes(friend?._id as string);
+          const isOnline = onlineFriends?.includes(friend?.id as string);
 
           const formattedTime = setFormattedTime(
             conversation?.lastMessageAt as string
           );
 
-          const isOwnLastMessage =
-            conversation.lastMessage?.sender_id === session?.user?.id;
+          // const isOwnLastMessage =
+          //   conversation.lastMessage?.sender_id === session?.user?.id;
 
-          const isSeen = conversation.lastMessage?.seen;
+          // const isSeen = conversation.lastMessage?.seen;
 
-          const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
+          // const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
 
-          console.log({ isOwnLastMessage, isSeen, isLastMessageSeen });
+          // console.log({ isOwnLastMessage, isSeen, isLastMessageSeen });
+
+          const { isLastMessageSeen, isSeen, isOwnLastMessage } = useMessages(
+            messages,
+            conversation,
+            session?.user?.id
+          );
 
           return (
             <div
-              key={conversation?._id}
+              key={conversation?.id}
               className={`delay-50 duration flex cursor-pointer items-center gap-2 rounded-md p-2 transition ease-in-out hover:bg-gray-100 ${
-                selectedUser?._id === friend?._id ? "bg-gray-100" : ""
+                selectedUser?.id === friend?.id ? "bg-gray-100" : ""
               }`}
-              onClick={() => setSelectedUser?.(friend as any)}
+              onClick={() => {
+                setSelectedUser?.(friend as any);
+                setCurrentChat?.(conversation);
+              }}
             >
               <Avatar image={friend?.avatarUrl} isOnline={isOnline} />
               <div className="flex h-full w-full flex-col justify-between">

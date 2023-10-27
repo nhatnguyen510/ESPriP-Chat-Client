@@ -9,7 +9,7 @@ type chatHeaderProps = {};
 const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
   const { selectedUser, onlineFriends } = useChatContext();
 
-  const isOnline = onlineFriends?.includes(selectedUser?._id as string);
+  const isOnline = onlineFriends?.includes(selectedUser?.id as string);
 
   console.log({ selectedUser });
 

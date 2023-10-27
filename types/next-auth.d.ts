@@ -20,9 +20,10 @@ interface User {
   username: string;
   first_name: string;
   last_name: string;
-  phone: string;
-  date_of_birth: string;
   is_verified: boolean;
   access_token: string;
   refresh_token: string;
+  refresh_token_id: string;
+  master_key: string;
+  conversationIds: UserId[];
 }

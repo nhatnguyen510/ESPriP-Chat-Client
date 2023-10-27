@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect, useRef, useState } from "react";
+import React, { use, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import ChatMessage from "./ChatMessage";
 import { MessageProps } from "@/../types/types";
@@ -8,9 +8,9 @@ import { CurrentUserReturnType } from "@/../lib/session";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import socket from "@/../lib/socket";
 import { useChatContext } from "@/../context/ChatProvider";
-import InfiniteScroll from "react-infinite-scroll-component";
-import { debounce } from "lodash";
 import LoadingSpinner from "./LoadingSpinner";
+import { BsArrowDownCircle } from "react-icons/bs";
+import { useMessages } from "@/../lib/hooks/useMessages";
 
 type chatHistoryProps = {
   user?: CurrentUserReturnType;
@@ -28,62 +28,63 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   } = useChatContext();
   const axiosAuth = useAxiosAuth(user);
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
-  const oldMessageRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef<HTMLSpanElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isOldMessageVisible, setIsOldMessageVisible] =
     useState<boolean>(false);
 
-  const lastMessage = messages?.[messages?.length - 1];
+  const [isScrollDownBtnVisible, setIsScrollDownBtnVisible] =
+    useState<boolean>(false);
 
-  const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
-
-  const isOwnLastMessage =
-    messages?.[messages?.length - 1]?.sender_id === user?.id;
+  const { lastMessage, isLastMessageSeen, noMoreMessages } = useMessages(
+    messages,
+    currentChat,
+    user?.id
+  );
 
   // Function to fetch more messages when scrolling to the top
-  const fetchMoreMessages = async () => {
-    if (messages!.length % 20 !== 0) {
+  const fetchMoreMessages = useCallback(async () => {
+    if (noMoreMessages) {
       return;
     }
 
-    const { data } = await axiosAuth.get(
-      `/chat/conversation/message/${currentChat?._id}`,
-      {
-        params: {
-          page: Math.ceil((messages?.length || 0) / 20) + 1,
-          limit: 20,
-        },
-      }
-    );
-
-    console.log("fetchMoreMessages", { data });
-
-    setMessages?.((prev) => [...data, ...prev]);
-  };
-
-  const handleScroll = async (e: React.UIEvent<HTMLDivElement, UIEvent>) => {
-    const element = e.target as HTMLDivElement;
-
-    if (element.scrollTop === 0 && !loading) {
+    if (currentChat?.id) {
       setLoading(true);
 
-      // wait for 2 seconds before fetching more messages
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { data } = await axiosAuth.get(
+        `/conversation/${currentChat?.id}/message`,
+        {
+          params: {
+            page: Math.ceil((messages?.length || 0) / 20) + 1,
+            limit: 20,
+          },
+        }
+      );
 
-      await fetchMoreMessages();
+      console.log("fetchMoreMessages", { data });
+
+      setMessages?.((prev) => [...data, ...prev]);
+
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop += 50; // Adjust the scroll position as needed
+      }
+
+      // wait for 1 second to simulate loading
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChat?.id, messages?.length, noMoreMessages]);
 
   // Fetch messages for current conversation
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log({ currentChat });
-      if (currentChat?._id) {
+      if (currentChat?.id) {
         const { data } = await axiosAuth.get(
-          `/chat/conversation/message/${currentChat?._id}`,
+          `/conversation/${currentChat?.id}/message`,
           {
             params: {
               page: 1,
@@ -100,12 +101,12 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
 
     fetchMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat?._id]);
+  }, [currentChat?.id]);
 
   // Scroll to bottom of messages
   useEffect(() => {
     lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedUser?._id]);
+  }, [selectedUser?.id, currentChat?.lastMessage?.id]);
 
   // Mark messages as seen
   useEffect(() => {
@@ -117,10 +118,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
     ) {
       const markMessagesAsSeen = async () => {
         const { data } = await axiosAuth.post(
-          `/chat/conversation/message/seen`,
-          {
-            conversation_id: currentChat?._id,
-          }
+          `/conversation/${currentChat?.id}/message/seen`
         );
 
         console.log("markMessagesAsSeen", { data });
@@ -140,7 +138,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
 
       setConversations?.((prev) => {
         const index = prev.findIndex(
-          (conversation) => conversation._id == currentChat?._id
+          (conversation) => conversation.id == currentChat?.id
         );
         const newConversations = [...prev];
         if (newConversations[index].lastMessage) {
@@ -159,15 +157,15 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         })
       );
 
-      socket.emit("markMessagesAsSeen", {
-        conversation_id: currentChat?._id,
-        sender_id: user?.id,
-        receiver_id: selectedUser?._id,
-        seen: true,
-      });
+      // socket.emit("markMessagesAsSeen", {
+      //   conversation_id: currentChat?.id,
+      //   sender_id: user?.id,
+      //   receiver_id: selectedUser?.id,
+      //   seen: true,
+      // });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat?._id, messages?.length, selectedUser?._id, user?.id]);
+  }, [currentChat?.id, messages?.length, selectedUser?.id, user?.id]);
 
   // Receive message
   useEffect(() => {
@@ -178,12 +176,12 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
       }
     ) => {
       console.log("Receiving message: ", data);
-      if (currentChat?._id === data.conversation_id) {
+      if (currentChat?.id === data.conversation_id) {
         console.log("Adding message to state");
         setMessages?.((prev) => [
-          ...prev,
+          ...(prev as any),
           {
-            _id: data._id,
+            _id: data.id,
             conversation_id: data.conversation_id,
             message: data.message,
             sender_id: data.sender_id,
@@ -195,7 +193,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
       // update conversation last message
       setConversations?.((prev) => {
         const index = prev.findIndex(
-          (conversation) => conversation._id == data.conversation_id
+          (conversation) => conversation.id == data.conversation_id
         );
         const newConversations = [...prev];
         newConversations[index].lastMessageAt = data.lastMessageAt;
@@ -205,7 +203,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
 
       // update current chat last message
       setCurrentChat?.((prev) => {
-        if (prev?._id === data.conversation_id) {
+        if (prev?.id === data.conversation_id) {
           return {
             ...(prev as any),
             lastMessageAt: data.lastMessageAt,
@@ -223,73 +221,86 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
       socket.off("receiveMessage", onReceiveMessage);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat?._id]);
+  }, [currentChat?.id]);
 
+  // Observe the old message to fetch more messages when scrolling to the top
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        setIsOldMessageVisible(entry.isIntersecting);
+        if (entry.isIntersecting && messages?.length) {
+          fetchMoreMessages();
+          console.log("Is intersecting");
+        }
       },
       {
         root: null, // Use the viewport as the root
         rootMargin: "0px",
-        threshold: 1.0, // Fire when 100% of the target is visible
+        threshold: 1, // Fire when 100% of the target is visible
       }
     );
 
-    const currentRef = oldMessageRef.current; // Copy the ref value to a variable
+    const currentRef = loadingRef.current; // Copy the ref value to a variable
 
     if (currentRef) {
       observer.observe(currentRef);
     }
 
     // Cleanup the observer when the component unmounts
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isOldMessageVisible && !loading) {
-      setLoading(true);
-
-      fetchMoreMessages();
-
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOldMessageVisible, loading]);
-
-  console.log({ isOldMessageVisible });
+    return () => observer.disconnect();
+  }, [fetchMoreMessages, messages?.length]);
 
   return (
     <>
       <div
         id="messages"
+        ref={chatContainerRef}
+        onScroll={() => {
+          if (
+            chatContainerRef.current &&
+            messages!.length > 20 &&
+            Math.floor(
+              (chatContainerRef.current.scrollTop /
+                (chatContainerRef.current.scrollHeight -
+                  chatContainerRef.current.clientHeight)) *
+                100
+            ) < 90
+          ) {
+            setIsScrollDownBtnVisible(true);
+          } else {
+            setIsScrollDownBtnVisible(false);
+          }
+        }}
         className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400"
-        // onScroll={handleScroll}
       >
-        {loading && (
-          <div className="flex items-center justify-center">
+        {!noMoreMessages && (
+          <span ref={loadingRef} className="flex justify-center">
             <LoadingSpinner />
-          </div>
+          </span>
         )}
-        <div ref={oldMessageRef}></div>
 
         {messages?.map((message) => {
           return (
             <ChatMessage
-              key={message._id}
+              key={message.id}
               message={message.message}
               isSentByUser={user?.id == message.sender_id}
-              isLastMessage={lastMessage?._id == message._id}
+              isLastMessage={lastMessage?.id == message.id}
               isSeen={isLastMessageSeen}
             />
           );
         })}
+        {isScrollDownBtnVisible && (
+          <span
+            className="absolute bottom-24 left-0 right-0 flex cursor-pointer justify-center"
+            onClick={() => {
+              lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            <BsArrowDownCircle className="h-6 w-6 animate-bounce text-gray-400" />
+          </span>
+        )}
+
         <div ref={lastMessageRef}></div>
       </div>
     </>

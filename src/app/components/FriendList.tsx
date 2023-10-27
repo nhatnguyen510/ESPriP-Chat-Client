@@ -42,12 +42,12 @@ const FriendList: React.FC<friendListProps> = ({ user }) => {
   }, [friendList?.length]);
 
   // useEffect(() => {
-  //   if (selectedUser?._id) {
+  //   if (selectedUser?.id) {
   //     //get conversation
   //     const fetchChat = async () => {
   //       try {
   //         const { data } = await axiosAuth.get(
-  //           `/chat/conversation/${selectedUser._id}`
+  //           `/chat/conversation/${selectedUser.id}`
   //         );
 
   //         console.log("fetchChat", { data });
@@ -60,7 +60,7 @@ const FriendList: React.FC<friendListProps> = ({ user }) => {
   //     fetchChat();
   //   }
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [selectedUser?._id]);
+  // }, [selectedUser?.id]);
 
   useEffect(() => {
     const onUserOnline = (data: { userId: string; status: string }) => {
@@ -103,12 +103,12 @@ const FriendList: React.FC<friendListProps> = ({ user }) => {
       <div className="w-full flex-1 overflow-y-auto">
         {friendList?.map((friend) => (
           <div
-            key={friend._id}
+            key={friend.id}
             className="transition-all hover:bg-slate-100"
             onClick={() => setSelectedUser?.(friend)}
           >
             <Friend
-              _id={friend._id}
+              _id={friend.id}
               username={friend.username}
               first_name={friend.first_name}
               last_name={friend.last_name}

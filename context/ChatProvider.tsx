@@ -37,44 +37,44 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const keys = useRef<DiffieHellman | null>(null);
 
-  useEffect(() => {
-    socket.auth = { userId: session?.user?.id };
-    socket.connect();
+  // useEffect(() => {
+  //   socket.auth = { userId: session?.user?.id };
+  //   socket.connect();
 
-    socket.on("primeAndGenerator", (data) => {
-      console.log("Prime and Generator: ", data);
+  //   socket.on("primeAndGenerator", (data) => {
+  //     console.log("Prime and Generator: ", data);
 
-      if (
-        !localStorage.getItem("publicKey") ||
-        !localStorage.getItem("privateKey")
-      ) {
-        const newKeys = createDiffieHellman(data.prime, data.generator);
-        newKeys.generateKeys();
+  //     if (
+  //       !localStorage.getItem("publicKey") ||
+  //       !localStorage.getItem("privateKey")
+  //     ) {
+  //       const newKeys = createDiffieHellman(data.prime, data.generator);
+  //       newKeys.generateKeys();
 
-        //save keys in local storage
-        localStorage.setItem("privateKey", newKeys.getPrivateKey("hex"));
-        localStorage.setItem("publicKey", newKeys.getPublicKey("hex"));
-      } else {
-        keys.current = createDiffieHellman(data.prime, data.generator);
-        keys.current.setPrivateKey(
-          Buffer.from(localStorage.getItem("privateKey") as string, "hex")
-        );
-        keys.current.setPublicKey(
-          Buffer.from(localStorage.getItem("publicKey") as string, "hex")
-        );
+  //       //save keys in local storage
+  //       localStorage.setItem("privateKey", newKeys.getPrivateKey("hex"));
+  //       localStorage.setItem("publicKey", newKeys.getPublicKey("hex"));
+  //     } else {
+  //       keys.current = createDiffieHellman(data.prime, data.generator);
+  //       keys.current.setPrivateKey(
+  //         Buffer.from(localStorage.getItem("privateKey") as string, "hex")
+  //       );
+  //       keys.current.setPublicKey(
+  //         Buffer.from(localStorage.getItem("publicKey") as string, "hex")
+  //       );
 
-        console.log(
-          "Keys: ",
-          keys.current.getPrivateKey("hex"),
-          keys.current.getPublicKey("hex")
-        );
-      }
-    });
+  //       console.log(
+  //         "Keys: ",
+  //         keys.current.getPrivateKey("hex"),
+  //         keys.current.getPublicKey("hex")
+  //       );
+  //     }
+  //   });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [session?.user?.id]);
+  //   return () => {
+  //     socket.disconnect();
+  //   };
+  // }, [session?.user?.id]);
 
   return (
     <ChatContext.Provider

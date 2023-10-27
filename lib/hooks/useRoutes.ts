@@ -12,7 +12,7 @@ const useRoutes = (user: CurrentUserReturnType) => {
   const axiosAuth = useAxiosAuth(user);
 
   const logout = useCallback(async () => {
-    const res = await axiosAuth.get(`auth/logout/${user?.id}`);
+    const res = await axiosAuth.post(`auth/logout`);
 
     console.log({ res });
 
@@ -21,7 +21,7 @@ const useRoutes = (user: CurrentUserReturnType) => {
       callbackUrl: "/login",
     });
     router.push(logoutResponse?.url as string);
-  }, [axiosAuth, router, user?.id]);
+  }, [axiosAuth, router]);
 
   const routes = useMemo(
     () => [

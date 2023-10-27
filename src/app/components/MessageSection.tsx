@@ -10,6 +10,7 @@ import socket from "@/../lib/socket";
 import { FriendType } from "@/../types/types";
 import { format, parseISO } from "date-fns";
 import ConversationList from "./ConversationList";
+import Button from "./Button";
 
 interface MessageSectionProps {
   user?: CurrentUserReturnType;
@@ -28,35 +29,35 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
 
   const fakeFriendList: FriendType[] = [
     {
-      _id: "60f9a1a0b3b3a1b4a8a0b3b3",
+      id: "60f9a1a0b3b3a1b4a8a0b3b3",
       username: "test1",
       avatarUrl: "https://i.pravatar.cc/150?img=1",
       first_name: "test1",
       last_name: "test1",
     },
     {
-      _id: "60f9a1a0b3b3a1b4a8a0b3b4",
+      id: "60f9a1a0b3b3a1b4a8a0b3b4",
       username: "test2",
       avatarUrl: "https://i.pravatar.cc/150?img=2",
       first_name: "test2",
       last_name: "test2",
     },
     {
-      _id: "60f9a1a0b3b3a1b4a8a0b3b5",
+      id: "60f9a1a0b3b3a1b4a8a0b3b5",
       username: "test3",
       avatarUrl: "https://i.pravatar.cc/150?img=3",
       first_name: "test3",
       last_name: "test3",
     },
     {
-      _id: "60f9a1a0b3b3a1b4a8a0b3b6",
+      id: "60f9a1a0b3b3a1b4a8a0b3b6",
       username: "test4",
       avatarUrl: "https://i.pravatar.cc/150?img=4",
       first_name: "test4",
       last_name: "test4",
     },
     {
-      _id: "60f9a1a0b3b3a1b4a8a0b3b7",
+      id: "60f9a1a0b3b3a1b4a8a0b3b7",
       username: "test5",
       avatarUrl: "https://i.pravatar.cc/150?img=5",
       first_name: "test5",
@@ -80,79 +81,55 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
   useEffect(() => {
     // get friends and conversations
     const fetchFriendsAndConversation = async () => {
-      const friendsData = axiosAuth.get(`/user/friends/`);
-      const conversationData = axiosAuth.get(`/chat/conversation/`);
+      const friendsData = axiosAuth.get(`/friends`);
+      const conversationsData = axiosAuth.get(`/conversation`);
 
-      const res = await Promise.all([friendsData, conversationData]);
+      const [friendsRes, conversationsRes] = await Promise.all([
+        friendsData,
+        conversationsData,
+      ]);
 
-      setFriendList?.(res?.[0]?.data);
-      setConversations?.(res?.[1]?.data);
+      setConversations?.(conversationsRes?.data);
+      setFriendList?.(friendsRes?.data);
     };
 
-    if (!friendList?.length) {
-      fetchFriendsAndConversation();
-    }
+    fetchFriendsAndConversation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendList?.length]);
+  }, []);
 
-  useEffect(() => {
-    if (selectedUser?._id) {
-      //get conversation
-      const fetchChat = async () => {
-        try {
-          const { data } = await axiosAuth.get(
-            `/chat/conversation/${selectedUser._id}`
-          );
+  // useEffect(() => {
+  //   const onUserOnline = (data: { userId: string; status: string }) => {
+  //     console.log("onUserOnline", { data });
+  //     if (data.status == "Online" && !onlineFriends?.includes(data.userId)) {
+  //       setOnlineFriends?.((prev) => [...prev, data.userId]);
+  //     }
+  //   };
+  //   const onUserOffline = (data: { userId: string; status: string }) => {
+  //     console.log("onUserOffline", { data });
+  //     if (data.status == "Offline") {
+  //       setOnlineFriends?.((prev) =>
+  //         prev.filter((friendId) => friendId !== data.userId)
+  //       );
+  //     }
+  //   };
+  //   const onFriendsOnline = (data: any) => {
+  //     console.log("onFriendsOnline", { data });
+  //     setOnlineFriends?.(data);
+  //   };
 
-          console.log("fetchChat", { data });
-          setCurrentChat?.({ ...data });
-        } catch (err) {
-          console.log(err);
-        }
-      };
+  //   socket.on("userOnline", onUserOnline);
 
-      fetchChat();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUser?._id]);
+  //   socket.on("userOffline", onUserOffline);
 
-  useEffect(() => {
-    const onUserOnline = (data: { userId: string; status: string }) => {
-      console.log("onUserOnline", { data });
-      if (data.status == "Online" && !onlineFriends?.includes(data.userId)) {
-        setOnlineFriends?.((prev) => [...prev, data.userId]);
-      }
-    };
-    const onUserOffline = (data: { userId: string; status: string }) => {
-      console.log("onUserOffline", { data });
-      if (data.status == "Offline") {
-        setOnlineFriends?.((prev) =>
-          prev.filter((friendId) => friendId !== data.userId)
-        );
-      }
-    };
-    const onFriendsOnline = (data: any) => {
-      console.log("onFriendsOnline", { data });
-      setOnlineFriends?.(data);
-    };
+  //   socket.on("friendsOnline", onFriendsOnline);
 
-    socket.on("userOnline", onUserOnline);
-
-    socket.on("userOffline", onUserOffline);
-
-    socket.on("friendsOnline", onFriendsOnline);
-
-    return () => {
-      socket.off("userOnline", onUserOnline);
-      socket.off("friendsOnline", onFriendsOnline);
-      socket.off("userOffline", onUserOffline);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onlineFriends]);
-
-  console.log("friendList", { friendList });
-  console.log("Conversations: ", { conversations });
-  console.log("onlineFriends", { onlineFriends });
+  //   return () => {
+  //     socket.off("userOnline", onUserOnline);
+  //     socket.off("friendsOnline", onFriendsOnline);
+  //     socket.off("userOffline", onUserOffline);
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [onlineFriends]);
 
   return (
     <>
@@ -181,7 +158,7 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
                 <div className="flex gap-4 overflow-x-auto scrollbar-none">
                   {fakeOnlineFriends?.map((friendId) => {
                     const friend = fakeFriendList?.find(
-                      (friend) => friend._id === friendId
+                      (friend) => friend.id === friendId
                     );
                     return (
                       <div

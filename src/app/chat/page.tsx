@@ -18,7 +18,7 @@ export default async function Chat(props: chatProps) {
           <div className="w-3/12 lg:ml-32">
             <MessageSection user={user} />
           </div>
-          <div className="flex w-9/12 flex-col">
+          <div className="relative flex w-9/12 flex-col">
             <ChatSection user={user} />
           </div>
         </div>

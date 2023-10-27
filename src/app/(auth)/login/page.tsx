@@ -33,12 +33,15 @@ export default function Login() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     console.log({ data });
     setIsLoading(true);
+
     const res = await signIn("credentials", {
       username: data.username,
       password: data.password,
       redirect: false,
       callbackUrl: "/chat",
     });
+
+    console.log({ res });
 
     if (res?.error) {
       setError("root.serverError", {

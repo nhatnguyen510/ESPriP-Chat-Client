@@ -25,12 +25,15 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
   const router = useRouter();
 
   useEffect(() => {
-    const onRequest = (config: any) => {
+    const onRequest = (config: InternalAxiosRequestConfig) => {
       if (user?.access_token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${user?.access_token}`,
-        };
+        // config.headers = {
+        //   ...config.headers,
+        //   Authorization: `Bearer ${user?.access_token}`,
+        //   "x-token-id": user?.refresh_token_id,
+        // };
+        config.headers.Authorization = `Bearer ${user?.access_token}`;
+        config.headers["x-token-id"] = user?.refresh_token_id;
         console.log("Headers: ", config.headers);
       }
       return config;
@@ -49,7 +52,7 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
     ): Promise<AxiosError | void> => {
       const prevRequest = error?.config as InternalAxiosRequestConfig;
       console.log("This is the error: ", error);
-      if (error?.response?.status === 403) {
+      if (error?.response?.status === 401) {
         console.log("Access token: ", prevRequest?.headers?.Authorization);
         try {
           const {

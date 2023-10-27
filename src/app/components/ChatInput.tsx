@@ -26,21 +26,24 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
 
     try {
       if (currentChat) {
-        const res = await axiosAuth.post("/chat/conversation/message", {
-          conversation_id: currentChat?._id,
-          sender_id: user?.id,
-          message: textInput,
-        });
+        const res = await axiosAuth.post(
+          `/conversation/${currentChat.id}/message`,
+          {
+            conversation_id: currentChat?.id,
+            sender_id: user?.id,
+            message: textInput,
+          }
+        );
         const sentMessage = res.data.savedMessage;
         const updatedConversation = res.data.updatedConversation;
 
         console.log({ sentMessage, updatedConversation });
 
         socket.emit("sendMessage", {
-          id: sentMessage._id,
+          id: sentMessage.id,
           conversation_id: sentMessage.conversation_id,
           sender_id: user?.id,
-          receiver_id: selectedUser?._id,
+          receiver_id: selectedUser?.id,
           seen: sentMessage.seen,
           message: textInput,
           lastMessage: updatedConversation.lastMessage,
@@ -52,7 +55,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
         // Update lastMessage and lastMessageAt in conversations
         setConversations?.((prev) => {
           const index = prev.findIndex(
-            (conversation) => conversation._id == updatedConversation._id
+            (conversation) => conversation.id == updatedConversation.id
           );
           const newConversations = [...prev];
           newConversations[index].lastMessageAt =

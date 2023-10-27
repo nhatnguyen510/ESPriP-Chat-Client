@@ -1,3 +1,4 @@
+import axios from "axios";
 import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth/next";
 import CredentialProvider from "next-auth/providers/credentials";
@@ -16,10 +17,10 @@ export const nextAuthOptions: NextAuthOptions = {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/login`,
           {
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            method: "POST",
             body: JSON.stringify({ username, password }),
           }
         );
@@ -30,11 +31,9 @@ export const nextAuthOptions: NextAuthOptions = {
           throw new Error(data.message);
         }
 
-        if (res.ok && data) {
-          const { _id, ...rest } = data;
-          const updatedData = { id: _id, ...rest };
-          return updatedData;
-        } else return null;
+        console.log({ data });
+
+        return data;
       },
     }),
   ],
@@ -49,6 +48,8 @@ export const nextAuthOptions: NextAuthOptions = {
       if (trigger === "update") {
         return { ...token, ...session.user };
       }
+
+      console.log({ token, user });
 
       return { ...token, ...user };
     },

@@ -1,5 +1,5 @@
 export type FriendType = {
-  _id: string;
+  id: string;
   username: string;
   first_name: string;
   last_name: string;
@@ -9,7 +9,7 @@ export type FriendType = {
 export type currentChatType = ConversationProps;
 
 export type MessageProps = {
-  _id: string;
+  id: string;
   sender_id: string;
   conversation_id: string;
   message: string;
@@ -19,8 +19,8 @@ export type MessageProps = {
 };
 
 export type ConversationProps = {
-  _id: string;
-  participants: string[];
+  id: string;
+  participantsIds: string[];
   createdAt?: string;
   updatedAt?: string;
   lastMessage?: MessageProps;
