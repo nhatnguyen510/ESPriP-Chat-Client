@@ -83,7 +83,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   useEffect(() => {
     const fetchMessages = async () => {
       if (currentChat?.id) {
-        const { data } = await axiosAuth.get(
+        const messageRes = await axiosAuth.get<MessageProps[]>(
           `/conversation/${currentChat?.id}/message`,
           {
             params: {
@@ -93,9 +93,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
           }
         );
 
-        console.log("fetchMessages", { data });
-
-        setMessages?.([...data]);
+        setMessages?.([...messageRes?.data]);
       }
     };
 
@@ -106,15 +104,15 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   // Scroll to bottom of messages
   useEffect(() => {
     lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedUser?.id, currentChat?.lastMessage?.id]);
+  }, [selectedUser?.id, currentChat?.last_message?.id]);
 
   // Mark messages as seen
   useEffect(() => {
     if (
       currentChat &&
-      messages &&
-      !currentChat.lastMessage?.seen &&
-      currentChat.lastMessage?.sender_id !== user?.id
+      messages?.length &&
+      !currentChat.last_message?.seen &&
+      currentChat.last_message?.sender_id !== user?.id
     ) {
       const markMessagesAsSeen = async () => {
         const { data } = await axiosAuth.post(
@@ -129,8 +127,8 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
       setCurrentChat?.((prev) => {
         return {
           ...(prev as any),
-          lastMessage: {
-            ...prev?.lastMessage,
+          last_message: {
+            ...prev?.last_message,
             seen: true,
           },
         };
@@ -141,8 +139,8 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
           (conversation) => conversation.id == currentChat?.id
         );
         const newConversations = [...prev];
-        if (newConversations[index].lastMessage) {
-          newConversations[index].lastMessage!.seen = true;
+        if (newConversations[index].last_message) {
+          newConversations[index].last_message!.seen = true;
         }
         return newConversations;
       });
@@ -167,61 +165,61 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat?.id, messages?.length, selectedUser?.id, user?.id]);
 
-  // Receive message
-  useEffect(() => {
-    const onReceiveMessage = (
-      data: MessageProps & {
-        lastMessageAt: string;
-        lastMessage: MessageProps;
-      }
-    ) => {
-      console.log("Receiving message: ", data);
-      if (currentChat?.id === data.conversation_id) {
-        console.log("Adding message to state");
-        setMessages?.((prev) => [
-          ...(prev as any),
-          {
-            _id: data.id,
-            conversation_id: data.conversation_id,
-            message: data.message,
-            sender_id: data.sender_id,
-            seen: data.seen,
-          },
-        ]);
-      }
+  // // Receive message
+  // useEffect(() => {
+  //   const onReceiveMessage = (
+  //     data: MessageProps & {
+  //       last_message_at: string;
+  //       last_message: MessageProps;
+  //     }
+  //   ) => {
+  //     console.log("Receiving message: ", data);
+  //     if (currentChat?.id === data.conversation_id) {
+  //       console.log("Adding message to state");
+  //       setMessages?.((prev) => [
+  //         ...(prev as any),
+  //         {
+  //           _id: data.id,
+  //           conversation_id: data.conversation_id,
+  //           message: data.message,
+  //           sender_id: data.sender_id,
+  //           seen: data.seen,
+  //         },
+  //       ]);
+  //     }
 
-      // update conversation last message
-      setConversations?.((prev) => {
-        const index = prev.findIndex(
-          (conversation) => conversation.id == data.conversation_id
-        );
-        const newConversations = [...prev];
-        newConversations[index].lastMessageAt = data.lastMessageAt;
-        newConversations[index].lastMessage = data.lastMessage;
-        return newConversations;
-      });
+  //     // update conversation last message
+  //     setConversations?.((prev) => {
+  //       const index = prev.findIndex(
+  //         (conversation) => conversation.id == data.conversation_id
+  //       );
+  //       const newConversations = [...prev];
+  //       newConversations[index].last_message_at = data.last_message_at;
+  //       newConversations[index].last_message = data.last_message;
+  //       return newConversations;
+  //     });
 
-      // update current chat last message
-      setCurrentChat?.((prev) => {
-        if (prev?.id === data.conversation_id) {
-          return {
-            ...(prev as any),
-            lastMessageAt: data.lastMessageAt,
-            lastMessage: data.lastMessage,
-          };
-        }
+  //     // update current chat last message
+  //     setCurrentChat?.((prev) => {
+  //       if (prev?.id === data.conversation_id) {
+  //         return {
+  //           ...(prev as any),
+  //           last_message_at: data.last_message_at,
+  //           last_message: data.last_message,
+  //         };
+  //       }
 
-        return prev;
-      });
-    };
+  //       return prev;
+  //     });
+  //   };
 
-    socket.on("receiveMessage", onReceiveMessage);
+  //   socket.on("receiveMessage", onReceiveMessage);
 
-    return () => {
-      socket.off("receiveMessage", onReceiveMessage);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat?.id]);
+  //   return () => {
+  //     socket.off("receiveMessage", onReceiveMessage);
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [currentChat?.id]);
 
   // Observe the old message to fetch more messages when scrolling to the top
   useEffect(() => {
@@ -273,23 +271,31 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         }}
         className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400"
       >
-        {!noMoreMessages && (
+        {messages?.length && !noMoreMessages && (
           <span ref={loadingRef} className="flex justify-center">
             <LoadingSpinner />
           </span>
         )}
 
-        {messages?.map((message) => {
-          return (
-            <ChatMessage
-              key={message.id}
-              message={message.message}
-              isSentByUser={user?.id == message.sender_id}
-              isLastMessage={lastMessage?.id == message.id}
-              isSeen={isLastMessageSeen}
-            />
-          );
-        })}
+        {messages?.length ? (
+          messages?.map((message) => {
+            return (
+              <ChatMessage
+                key={message.id}
+                message={message.message}
+                isSentByUser={user?.id == message.sender_id}
+                isLastMessage={lastMessage?.id == message.id}
+                isSeen={isLastMessageSeen}
+              />
+            );
+          })
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center">
+            <p className="mt-4 text-lg text-gray-400">
+              No messages yet, start chatting
+            </p>
+          </div>
+        )}
         {isScrollDownBtnVisible && (
           <span
             className="absolute bottom-24 left-0 right-0 flex cursor-pointer justify-center"

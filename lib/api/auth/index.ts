@@ -5,7 +5,7 @@ export const refresh = async (refreshToken: string, xTokenId: string) => {
     const res = await publicAxios.post(
       "/auth/refresh",
       {
-        refreshToken,
+        refresh_token: refreshToken,
       },
       {
         headers: {

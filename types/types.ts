@@ -1,12 +1,12 @@
-export type FriendType = {
+export type FriendProps = {
   id: string;
   username: string;
   first_name: string;
   last_name: string;
-  avatarUrl?: string;
+  avatar_url?: string;
 };
 
-export type currentChatType = ConversationProps;
+export type CurrentChatProps = ConversationProps;
 
 export type MessageProps = {
   id: string;
@@ -14,15 +14,17 @@ export type MessageProps = {
   conversation_id: string;
   message: string;
   seen: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  sender: FriendProps;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type ConversationProps = {
   id: string;
-  participantsIds: string[];
-  createdAt?: string;
-  updatedAt?: string;
-  lastMessage?: MessageProps;
-  lastMessageAt?: string;
+  participants_ids: string[];
+  created_at?: string;
+  updated_at?: string;
+  last_message?: MessageProps;
+  last_message_id?: string;
+  last_message_at?: string;
 };

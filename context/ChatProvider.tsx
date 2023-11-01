@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { FriendType, ConversationProps, MessageProps } from "../types/types";
+import { FriendProps, ConversationProps, MessageProps } from "../types/types";
 import { useSession } from "next-auth/react";
 import socket from "../lib/socket";
 import { createDiffieHellman, DiffieHellman } from "crypto";
@@ -11,12 +11,12 @@ type ChatContextType = {
   setCurrentChat: React.Dispatch<
     React.SetStateAction<ConversationProps | null>
   >;
-  selectedUser: FriendType | null | undefined;
-  setSelectedUser: React.Dispatch<React.SetStateAction<FriendType | null>>;
+  selectedUser: FriendProps | null | undefined;
+  setSelectedUser: React.Dispatch<React.SetStateAction<FriendProps | null>>;
   messages: MessageProps[];
   setMessages: React.Dispatch<React.SetStateAction<MessageProps[]>>;
-  friendList: FriendType[];
-  setFriendList: React.Dispatch<React.SetStateAction<FriendType[]>>;
+  friendList: FriendProps[];
+  setFriendList: React.Dispatch<React.SetStateAction<FriendProps[]>>;
   onlineFriends: string[];
   setOnlineFriends: React.Dispatch<React.SetStateAction<string[]>>;
   conversations: ConversationProps[];
@@ -29,9 +29,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentChat, setCurrentChat] = useState<ConversationProps | null>(
     null
   );
-  const [selectedUser, setSelectedUser] = useState<FriendType | null>(null);
+  const [selectedUser, setSelectedUser] = useState<FriendProps | null>(null);
   const [messages, setMessages] = useState<MessageProps[]>([]);
-  const [friendList, setFriendList] = useState<FriendType[]>([]);
+  const [friendList, setFriendList] = useState<FriendProps[]>([]);
   const [onlineFriends, setOnlineFriends] = useState<string[]>([]);
   const [conversations, setConversations] = useState<ConversationProps[]>([]);
   const { data: session } = useSession();

@@ -6,11 +6,11 @@ import {
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
-  RawAxiosRequestConfig,
 } from "axios";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { CurrentUserReturnType } from "../session";
+import { getSession, getCsrfToken } from "next-auth/react";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: "api/v1",
@@ -27,14 +27,8 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
   useEffect(() => {
     const onRequest = (config: InternalAxiosRequestConfig) => {
       if (user?.access_token) {
-        // config.headers = {
-        //   ...config.headers,
-        //   Authorization: `Bearer ${user?.access_token}`,
-        //   "x-token-id": user?.refresh_token_id,
-        // };
         config.headers.Authorization = `Bearer ${user?.access_token}`;
         config.headers["x-token-id"] = user?.refresh_token_id;
-        console.log("Headers: ", config.headers);
       }
       return config;
     };
@@ -69,6 +63,21 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
             console.log("Prev request: ", prevRequest);
             user!.access_token = newAccessToken;
             user!.refresh_token = newRefreshToken;
+            const csrfToken = await getCsrfToken();
+            const updatedSession = await getSession({
+              req: {
+                body: {
+                  csrfToken,
+                  data: {
+                    user: {
+                      access_token: newAccessToken,
+                      refresh_token: newRefreshToken,
+                    },
+                  },
+                },
+              },
+            });
+
             return axiosInstance(prevRequest);
           }
         } catch (err) {

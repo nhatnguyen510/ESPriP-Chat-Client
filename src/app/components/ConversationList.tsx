@@ -32,8 +32,8 @@ const ConversationList: React.FC<ConversationListProps> = () => {
     ?.slice()
     .sort((a: ConversationProps, b: ConversationProps) => {
       return (
-        new Date(b.lastMessageAt as string).getTime() -
-        new Date(a.lastMessageAt as string).getTime()
+        new Date(b.last_message_at as string).getTime() -
+        new Date(a.last_message_at as string).getTime()
       );
     });
 
@@ -109,23 +109,14 @@ const ConversationList: React.FC<ConversationListProps> = () => {
         sortedConversations.map((conversation) => {
           const friend = friendList?.find(
             (friend) =>
-              conversation?.participantsIds?.includes(friend?.id) || ""
+              conversation?.participants_ids?.includes(friend?.id) || ""
           );
 
           const isOnline = onlineFriends?.includes(friend?.id as string);
 
           const formattedTime = setFormattedTime(
-            conversation?.lastMessageAt as string
+            conversation?.last_message_at as string
           );
-
-          // const isOwnLastMessage =
-          //   conversation.lastMessage?.sender_id === session?.user?.id;
-
-          // const isSeen = conversation.lastMessage?.seen;
-
-          // const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
-
-          // console.log({ isOwnLastMessage, isSeen, isLastMessageSeen });
 
           const { isLastMessageSeen, isSeen, isOwnLastMessage } = useMessages(
             messages,
@@ -144,7 +135,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
                 setCurrentChat?.(conversation);
               }}
             >
-              <Avatar image={friend?.avatarUrl} isOnline={isOnline} />
+              <Avatar image={friend?.avatar_url} isOnline={isOnline} />
               <div className="flex h-full w-full flex-col justify-between">
                 <div className="flex flex-1 items-center justify-between">
                   <p className="text-sm font-semibold">{friend?.username}</p>
@@ -152,14 +143,14 @@ const ConversationList: React.FC<ConversationListProps> = () => {
                 </div>
                 <p
                   className={`max-w-[170px] truncate text-xs ${
-                    !conversation.lastMessage?.seen && !isOwnLastMessage
+                    !conversation.last_message?.seen && !isOwnLastMessage
                       ? "font-bold text-gray-800"
                       : "font-normal text-gray-500"
                   }`}
                 >
-                  {isOwnLastMessage && conversation.lastMessage
-                    ? `You: ${conversation.lastMessage?.message}`
-                    : `${conversation.lastMessage?.message || ""}`}
+                  {isOwnLastMessage && conversation.last_message
+                    ? `You: ${conversation.last_message?.message}`
+                    : `${conversation.last_message?.message || ""}`}
                 </p>
               </div>
             </div>

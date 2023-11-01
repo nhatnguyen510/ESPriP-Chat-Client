@@ -25,5 +25,5 @@ interface User {
   refresh_token: string;
   refresh_token_id: string;
   master_key: string;
-  conversationIds: UserId[];
+  conversation_ids: UserId[];
 }

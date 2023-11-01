@@ -7,10 +7,11 @@ import { useChatContext } from "@/../context/ChatProvider";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { CurrentUserReturnType } from "@/../lib/session";
 import socket from "@/../lib/socket";
-import { FriendType } from "@/../types/types";
+import { ConversationProps, FriendProps } from "@/../types/types";
 import { format, parseISO } from "date-fns";
 import ConversationList from "./ConversationList";
 import Button from "./Button";
+import { AxiosResponse } from "axios";
 
 interface MessageSectionProps {
   user?: CurrentUserReturnType;
@@ -27,39 +28,39 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
     "60f9a1a0b3b3a1b4a8a0b3b7",
   ];
 
-  const fakeFriendList: FriendType[] = [
+  const fakeFriendList: FriendProps[] = [
     {
       id: "60f9a1a0b3b3a1b4a8a0b3b3",
       username: "test1",
-      avatarUrl: "https://i.pravatar.cc/150?img=1",
+      avatar_url: "https://i.pravatar.cc/150?img=1",
       first_name: "test1",
       last_name: "test1",
     },
     {
       id: "60f9a1a0b3b3a1b4a8a0b3b4",
       username: "test2",
-      avatarUrl: "https://i.pravatar.cc/150?img=2",
+      avatar_url: "https://i.pravatar.cc/150?img=2",
       first_name: "test2",
       last_name: "test2",
     },
     {
       id: "60f9a1a0b3b3a1b4a8a0b3b5",
       username: "test3",
-      avatarUrl: "https://i.pravatar.cc/150?img=3",
+      avatar_url: "https://i.pravatar.cc/150?img=3",
       first_name: "test3",
       last_name: "test3",
     },
     {
       id: "60f9a1a0b3b3a1b4a8a0b3b6",
       username: "test4",
-      avatarUrl: "https://i.pravatar.cc/150?img=4",
+      avatar_url: "https://i.pravatar.cc/150?img=4",
       first_name: "test4",
       last_name: "test4",
     },
     {
       id: "60f9a1a0b3b3a1b4a8a0b3b7",
       username: "test5",
-      avatarUrl: "https://i.pravatar.cc/150?img=5",
+      avatar_url: "https://i.pravatar.cc/150?img=5",
       first_name: "test5",
       last_name: "test5",
     },
@@ -81,13 +82,19 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
   useEffect(() => {
     // get friends and conversations
     const fetchFriendsAndConversation = async () => {
-      const friendsData = axiosAuth.get(`/friends`);
-      const conversationsData = axiosAuth.get(`/conversation`);
+      const friendsData = axiosAuth.get<FriendProps[]>(`/friends`);
+      const conversationsData =
+        axiosAuth.get<ConversationProps[]>(`/conversation`);
 
       const [friendsRes, conversationsRes] = await Promise.all([
         friendsData,
         conversationsData,
       ]);
+
+      console.log("fetchFriendsAndConversation", {
+        friendsRes,
+        conversationsRes,
+      });
 
       setConversations?.(conversationsRes?.data);
       setFriendList?.(friendsRes?.data);
@@ -131,6 +138,8 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, [onlineFriends]);
 
+  console.log({ user });
+
   return (
     <>
       <div className="flex h-full flex-col gap-4 border-r-[1px] px-4 py-6">
@@ -165,7 +174,7 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
                         key={friendId}
                         className="flex items-center gap-2 py-2"
                       >
-                        <Avatar image={friend?.avatarUrl} isOnline={true} />
+                        <Avatar image={friend?.avatar_url} isOnline={true} />
                       </div>
                     );
                   })}

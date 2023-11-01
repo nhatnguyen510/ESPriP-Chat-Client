@@ -1,13 +1,13 @@
 import React from "react";
 import Img from "next/image";
-import { FriendType } from "@/../types/types";
+import { FriendProps } from "@/../types/types";
 
-const Friend: React.FC<FriendType> = ({
-  _id,
+const Friend: React.FC<FriendProps> = ({
+  id,
   username,
   first_name,
   last_name,
-  avatarUrl,
+  avatar_url,
 }) => {
   return (
     <div className="flex cursor-pointer items-center border-b border-gray-300 py-4 pr-2">
@@ -15,7 +15,7 @@ const Friend: React.FC<FriendType> = ({
         <Img
           width={0}
           height={0}
-          src={avatarUrl ? avatarUrl : "/avatar-cute-2.jpeg"}
+          src={avatar_url ? avatar_url : "/avatar-cute-2.jpeg"}
           alt="Avatar"
           className="h-12 w-12 rounded-full"
         />

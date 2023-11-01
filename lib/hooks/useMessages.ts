@@ -9,7 +9,7 @@ export const useMessages = (
 
   const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
 
-  const isSeen = conversation?.lastMessage?.seen;
+  const isSeen = conversation?.last_message?.seen;
 
   const isOwnLastMessage =
     messages?.[messages?.length - 1]?.sender_id === userId;

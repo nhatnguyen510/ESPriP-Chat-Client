@@ -6,6 +6,7 @@ import { CurrentUserReturnType } from "@/../lib/session";
 import { useChatContext } from "@/../context/ChatProvider";
 import socket from "@/../lib/socket";
 import { useSession } from "next-auth/react";
+import { MessageProps, ConversationProps } from "../../../types/types";
 
 type chatInputProps = {
   user?: CurrentUserReturnType;
@@ -14,8 +15,13 @@ type chatInputProps = {
 const ChatInput: React.FC<chatInputProps> = ({ user }) => {
   const [textInput, setTextInput] = useState<string>("");
   const axiosAuth = useAxiosAuth(user);
-  const { currentChat, setMessages, selectedUser, setConversations } =
-    useChatContext();
+  const {
+    currentChat,
+    setCurrentChat,
+    setMessages,
+    selectedUser,
+    setConversations,
+  } = useChatContext();
 
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTextInput(e.target.value);
@@ -26,31 +32,37 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
 
     try {
       if (currentChat) {
-        const res = await axiosAuth.post(
-          `/conversation/${currentChat.id}/message`,
-          {
-            conversation_id: currentChat?.id,
-            sender_id: user?.id,
-            message: textInput,
-          }
-        );
+        const res = await axiosAuth.post<{
+          savedMessage: MessageProps;
+          updatedConversation: ConversationProps;
+        }>(`/conversation/${currentChat.id}/message`, {
+          message: textInput,
+        });
         const sentMessage = res.data.savedMessage;
         const updatedConversation = res.data.updatedConversation;
 
         console.log({ sentMessage, updatedConversation });
 
-        socket.emit("sendMessage", {
-          id: sentMessage.id,
-          conversation_id: sentMessage.conversation_id,
-          sender_id: user?.id,
-          receiver_id: selectedUser?.id,
-          seen: sentMessage.seen,
-          message: textInput,
-          lastMessage: updatedConversation.lastMessage,
-          lastMessageAt: updatedConversation.lastMessageAt,
-        });
+        // socket.emit("sendMessage", {
+        //   id: sentMessage.id,
+        //   conversation_id: sentMessage.conversation_id,
+        //   sender_id: user?.id,
+        //   receiver_id: selectedUser?.id,
+        //   seen: sentMessage.seen,
+        //   message: textInput,
+        //   lastMessage: updatedConversation.lastMessage,
+        //   lastMessageAt: updatedConversation.lastMessageAt,
+        // });
 
         setMessages?.((prev) => [...prev, sentMessage]);
+
+        setCurrentChat?.((prev) => {
+          return {
+            ...(prev as any),
+            last_message: updatedConversation.last_message,
+            last_message_at: updatedConversation.last_message_at,
+          };
+        });
 
         // Update lastMessage and lastMessageAt in conversations
         setConversations?.((prev) => {
@@ -58,9 +70,10 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
             (conversation) => conversation.id == updatedConversation.id
           );
           const newConversations = [...prev];
-          newConversations[index].lastMessageAt =
-            updatedConversation.lastMessageAt;
-          newConversations[index].lastMessage = updatedConversation.lastMessage;
+          newConversations[index].last_message_at =
+            updatedConversation.last_message_at;
+          newConversations[index].last_message =
+            updatedConversation.last_message;
           return newConversations;
         });
 

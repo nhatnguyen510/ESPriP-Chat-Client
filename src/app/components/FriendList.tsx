@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Friend from "./Friend";
-import { FriendType } from "@/../types/types";
+import { FriendProps } from "@/../types/types";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { useChatContext } from "@/../context/ChatProvider";
 import socket from "@/../lib/socket";
@@ -14,7 +14,7 @@ type friendListProps = {
 };
 
 const FriendList: React.FC<friendListProps> = ({ user }) => {
-  const [friendList, setFriendList] = useState<FriendType[]>([]);
+  const [friendList, setFriendList] = useState<FriendProps[]>([]);
 
   const axiosAuth = useAxiosAuth(user);
 
