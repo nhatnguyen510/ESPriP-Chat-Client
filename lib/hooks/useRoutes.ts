@@ -6,15 +6,13 @@ import { signOut, useSession } from "next-auth/react";
 import useAxiosAuth from "./useAxiosAuth";
 import { CurrentUserReturnType } from "../session";
 
-const useRoutes = (user: CurrentUserReturnType) => {
+const useRoutes = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const axiosAuth = useAxiosAuth(user);
+  const axiosAuth = useAxiosAuth();
 
   const logout = useCallback(async () => {
     const res = await axiosAuth.post(`auth/logout`);
-
-    console.log({ res });
 
     const logoutResponse = await signOut({
       redirect: false,

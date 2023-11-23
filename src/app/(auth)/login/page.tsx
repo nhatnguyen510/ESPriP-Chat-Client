@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import Input from "../../components/RegisterInput";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import Input from "@/app/components/RegisterInput";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FormData } from "@/../lib/validation/registerSchema";
@@ -31,7 +31,6 @@ export default function Login() {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    console.log({ data });
     setIsLoading(true);
 
     const res = await signIn("credentials", {
@@ -41,11 +40,9 @@ export default function Login() {
       callbackUrl: "/chat",
     });
 
-    console.log({ res });
-
     if (res?.error) {
       setError("root.serverError", {
-        message: res.error,
+        message: JSON.parse(res?.error).message,
         type: "serverError",
       });
     } else {

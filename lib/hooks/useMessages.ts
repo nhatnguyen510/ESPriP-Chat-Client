@@ -1,26 +1,19 @@
-import { ConversationProps, MessageProps } from "../../types/types";
+import { ConversationProps, MessageProps } from "@/../types";
 
 export const useMessages = (
   messages: MessageProps[] | undefined,
   conversation: ConversationProps | undefined | null,
   userId: string | undefined
 ) => {
-  const lastMessage = messages?.[messages?.length - 1];
+  const lastMessage = conversation?.last_message;
 
-  const isLastMessageSeen = messages?.[messages?.length - 1]?.seen;
+  const isLastMessageSeen = conversation?.last_message?.seen;
 
-  const isSeen = conversation?.last_message?.seen;
-
-  const isOwnLastMessage =
-    messages?.[messages?.length - 1]?.sender_id === userId;
-
-  const noMoreMessages = messages!.length % 20 !== 0;
+  const isOwnLastMessage = conversation?.last_message?.sender_id === userId;
 
   return {
     lastMessage,
     isLastMessageSeen,
-    isSeen,
     isOwnLastMessage,
-    noMoreMessages,
   };
 };

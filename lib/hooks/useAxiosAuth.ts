@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosInterceptorManager } from "axios";
 import useRefreshToken from "./useRefreshToken";
 import {
   AxiosError,
@@ -8,9 +8,10 @@ import {
   InternalAxiosRequestConfig,
 } from "axios";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { CurrentUserReturnType } from "../session";
 import { getSession, getCsrfToken } from "next-auth/react";
+import { refresh } from "../api/auth";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: "api/v1",
@@ -19,17 +20,28 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
-const useAxiosAuth = (user: CurrentUserReturnType) => {
-  const refreshToken = useRefreshToken(user);
-
+const useAxiosAuth = () => {
+  const { data: session, status, update } = useSession();
+  const user = session?.user;
   const router = useRouter();
 
   useEffect(() => {
-    const onRequest = (config: InternalAxiosRequestConfig) => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    let requestInterceptor:
+      | number
+      | AxiosInterceptorManager<AxiosRequestConfig>;
+    let responseInterceptor: number | AxiosInterceptorManager<AxiosResponse>;
+
+    const onRequest = async (config: InternalAxiosRequestConfig) => {
       if (user?.access_token) {
+        // Create a new headers object to avoid direct mutation
         config.headers.Authorization = `Bearer ${user?.access_token}`;
         config.headers["x-token-id"] = user?.refresh_token_id;
       }
+
       return config;
     };
 
@@ -45,40 +57,47 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
       error: AxiosError
     ): Promise<AxiosError | void> => {
       const prevRequest = error?.config as InternalAxiosRequestConfig;
-      console.log("This is the error: ", error);
       if (error?.response?.status === 401) {
-        console.log("Access token: ", prevRequest?.headers?.Authorization);
         try {
           const {
             access_token: newAccessToken,
             refresh_token: newRefreshToken,
-          } = await refreshToken();
+          } = await refresh(
+            user?.refresh_token as string,
+            user?.refresh_token_id as string
+          );
 
-          console.log("New access token: ", newAccessToken);
           if (newAccessToken) {
-            prevRequest.headers = {
+            // Create a new headers object to avoid direct mutation
+            const updatedHeaders = {
               ...prevRequest.headers,
               Authorization: `Bearer ${newAccessToken}`,
-            } as InternalAxiosRequestConfig["headers"];
-            console.log("Prev request: ", prevRequest);
-            user!.access_token = newAccessToken;
-            user!.refresh_token = newRefreshToken;
-            const csrfToken = await getCsrfToken();
-            const updatedSession = await getSession({
-              req: {
-                body: {
-                  csrfToken,
-                  data: {
-                    user: {
-                      access_token: newAccessToken,
-                      refresh_token: newRefreshToken,
-                    },
-                  },
-                },
-              },
+            };
+
+            // const csrfToken = await getCsrfToken();
+            // const updatedSession = await getSession({
+            //   req: {
+            //     body: {
+            //       csrfToken,
+            //       data: {
+            //         user: {
+            //           access_token: newAccessToken,
+            //           refresh_token: newRefreshToken,
+            //         },
+            //       },
+            //     },
+            //   },
+            // });
+            await update({
+              access_token: newAccessToken,
+              refresh_token: newRefreshToken,
             });
 
-            return axiosInstance(prevRequest);
+            // Retry the original request with the updated headers
+            return axiosInstance({
+              ...prevRequest,
+              headers: updatedHeaders,
+            });
           }
         } catch (err) {
           console.log("Something went wrong while refreshing token: ", err);
@@ -88,27 +107,32 @@ const useAxiosAuth = (user: CurrentUserReturnType) => {
           });
 
           router.push(signOutResponse?.url);
+          return Promise.reject(err);
         }
       } else {
         return Promise.reject(error);
       }
     };
-    const requestIntercept = axiosInstance.interceptors.request.use(
+
+    // Set up interceptors
+    requestInterceptor = axiosInstance.interceptors.request.use(
       onRequest,
       onErrorRequest
     );
 
-    const responseIntercept = axiosInstance.interceptors.response.use(
+    responseInterceptor = axiosInstance.interceptors.response.use(
       onResponse,
       onErrorResponse
     );
 
+    // Clean up interceptors when the component is unmounted
     return () => {
-      axiosInstance.interceptors.request.eject(requestIntercept);
-      axiosInstance.interceptors.response.eject(responseIntercept);
+      axiosInstance.interceptors.request.eject(requestInterceptor as number);
+      axiosInstance.interceptors.response.eject(responseInterceptor as number);
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [status, user?.access_token, user?.refresh_token]);
 
   return axiosInstance;
 };

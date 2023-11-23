@@ -1,6 +1,6 @@
 import React from "react";
 import Img from "next/image";
-import { FriendProps } from "@/../types/types";
+import { FriendProps } from "@/../types";
 
 const Friend: React.FC<FriendProps> = ({
   id,

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import Input from "../../components/RegisterInput";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import Input from "@/app/components/RegisterInput";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -42,7 +42,6 @@ export default function Register() {
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    console.log({ data });
     setIsLoading(true);
     const response = await toast.promise(
       fetch("/api/v1/auth/register", {
@@ -67,7 +66,6 @@ export default function Register() {
 
     if (response.ok) {
       router.push("/login");
-      console.log({ responseData });
     } else {
       console.log({ responseData });
     }
@@ -81,8 +79,6 @@ export default function Register() {
   const handleDisplayConfirmedPassword = () => {
     setShowConfirmedPassword(!showConfirmedPassword);
   };
-
-  console.log({ errors });
 
   return (
     <>

@@ -7,18 +7,16 @@ import ChatInput from "./ChatInput";
 import { useChatContext } from "@/../context/ChatProvider";
 import { CurrentUserReturnType } from "@/../lib/session";
 
-type ChatSectionProps = {
-  user?: CurrentUserReturnType;
-};
+type ChatSectionProps = {};
 
-const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
+const ChatSection: React.FC<ChatSectionProps> = () => {
   const { selectedUser } = useChatContext();
 
   return selectedUser ? (
     <>
       <ChatHeader />
-      <ChatHistory user={user} />
-      <ChatInput user={user} />
+      <ChatHistory />
+      <ChatInput />
     </>
   ) : (
     <>

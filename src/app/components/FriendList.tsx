@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Friend from "./Friend";
-import { FriendProps } from "@/../types/types";
+import { FriendProps } from "../../../types";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { useChatContext } from "@/../context/ChatProvider";
 import socket from "@/../lib/socket";

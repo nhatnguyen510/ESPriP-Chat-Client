@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { FriendProps, ConversationProps, MessageProps } from "../types/types";
-import { useSession } from "next-auth/react";
+import { FriendProps, ConversationProps, MessageProps } from "../types";
+import { getCsrfToken, getSession, useSession } from "next-auth/react";
 import socket from "../lib/socket";
 import { createDiffieHellman, DiffieHellman } from "crypto";
+import { refresh } from "../lib/api/auth";
 
 type ChatContextType = {
   currentChat: ConversationProps | null;
@@ -34,47 +35,87 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [friendList, setFriendList] = useState<FriendProps[]>([]);
   const [onlineFriends, setOnlineFriends] = useState<string[]>([]);
   const [conversations, setConversations] = useState<ConversationProps[]>([]);
-  const { data: session } = useSession();
   const keys = useRef<DiffieHellman | null>(null);
+  const { data: session, status, update } = useSession();
 
-  // useEffect(() => {
-  //   socket.auth = { userId: session?.user?.id };
-  //   socket.connect();
+  useEffect(() => {
+    function connectSocket() {
+      socket.auth = { token: session?.user.access_token };
+      socket.connect();
 
-  //   socket.on("primeAndGenerator", (data) => {
-  //     console.log("Prime and Generator: ", data);
+      socket.on("connect_error", async (err) => {
+        console.log("Error connecting to socket: ", err);
+        socket.close();
+        const { access_token, refresh_token } = await refresh(
+          session?.user.refresh_token as string,
+          session?.user.refresh_token_id as string
+        );
 
-  //     if (
-  //       !localStorage.getItem("publicKey") ||
-  //       !localStorage.getItem("privateKey")
-  //     ) {
-  //       const newKeys = createDiffieHellman(data.prime, data.generator);
-  //       newKeys.generateKeys();
+        // const csrfToken = await getCsrfToken();
+        // const updatedSession = await getSession({
+        //   req: {
+        //     body: {
+        //       csrfToken,
+        //       data: {
+        //         user: {
+        //           access_token,
+        //           refresh_token,
+        //         },
+        //       },
+        //     },
+        //   },
+        // });
+        await update({
+          access_token,
+          refresh_token,
+        });
 
-  //       //save keys in local storage
-  //       localStorage.setItem("privateKey", newKeys.getPrivateKey("hex"));
-  //       localStorage.setItem("publicKey", newKeys.getPublicKey("hex"));
-  //     } else {
-  //       keys.current = createDiffieHellman(data.prime, data.generator);
-  //       keys.current.setPrivateKey(
-  //         Buffer.from(localStorage.getItem("privateKey") as string, "hex")
-  //       );
-  //       keys.current.setPublicKey(
-  //         Buffer.from(localStorage.getItem("publicKey") as string, "hex")
-  //       );
+        socket.auth = { token: access_token };
 
-  //       console.log(
-  //         "Keys: ",
-  //         keys.current.getPrivateKey("hex"),
-  //         keys.current.getPublicKey("hex")
-  //       );
-  //     }
-  //   });
+        socket.connect();
+      });
+    }
 
-  //   return () => {
-  //     socket.disconnect();
-  //   };
-  // }, [session?.user?.id]);
+    if (status === "authenticated") {
+      connectSocket();
+    }
+
+    // socket.on("primeAndGenerator", (data) => {
+    //   console.log("Prime and Generator: ", data);
+
+    //   if (
+    //     !localStorage.getItem("publicKey") ||
+    //     !localStorage.getItem("privateKey")
+    //   ) {
+    //     const newKeys = createDiffieHellman(data.prime, data.generator);
+    //     newKeys.generateKeys();
+
+    //     //save keys in local storage
+    //     localStorage.setItem("privateKey", newKeys.getPrivateKey("hex"));
+    //     localStorage.setItem("publicKey", newKeys.getPublicKey("hex"));
+    //   } else {
+    //     keys.current = createDiffieHellman(data.prime, data.generator);
+    //     keys.current.setPrivateKey(
+    //       Buffer.from(localStorage.getItem("privateKey") as string, "hex")
+    //     );
+    //     keys.current.setPublicKey(
+    //       Buffer.from(localStorage.getItem("publicKey") as string, "hex")
+    //     );
+
+    //     console.log(
+    //       "Keys: ",
+    //       keys.current.getPrivateKey("hex"),
+    //       keys.current.getPublicKey("hex")
+    //     );
+    //   }
+    // });
+
+    return () => {
+      socket.off("connect_error");
+      socket.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user, status]);
 
   return (
     <ChatContext.Provider

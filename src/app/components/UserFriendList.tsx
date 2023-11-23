@@ -2,7 +2,6 @@
 
 import React from "react";
 import { CurrentUserReturnType } from "@/../lib/session";
-import FriendList from "./FriendList";
 import UserSettings from "./UserSettings";
 import { useSession } from "next-auth/react";
 
@@ -48,7 +47,6 @@ const UserFriendList: React.FC<sideBarProps> = ({ user }) => {
           className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      <FriendList user={user} />
     </div>
   );
 };

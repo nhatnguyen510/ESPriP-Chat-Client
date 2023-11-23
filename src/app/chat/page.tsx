@@ -16,10 +16,10 @@ export default async function Chat(props: chatProps) {
         <div className="flex h-full">
           <SideBar currentUser={user} />
           <div className="w-3/12 lg:ml-32">
-            <MessageSection user={user} />
+            <MessageSection />
           </div>
           <div className="relative flex w-9/12 flex-col">
-            <ChatSection user={user} />
+            <ChatSection />
           </div>
         </div>
       </div>

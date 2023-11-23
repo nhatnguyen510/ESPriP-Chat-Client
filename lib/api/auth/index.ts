@@ -2,7 +2,10 @@ import { publicAxios } from "@/../lib/axios";
 
 export const refresh = async (refreshToken: string, xTokenId: string) => {
   try {
-    const res = await publicAxios.post(
+    const res = await publicAxios.post<{
+      access_token: string;
+      refresh_token: string;
+    }>(
       "/auth/refresh",
       {
         refresh_token: refreshToken,

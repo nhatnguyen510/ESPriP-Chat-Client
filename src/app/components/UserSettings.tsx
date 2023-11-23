@@ -9,14 +9,14 @@ import { signOut, useSession } from "next-auth/react";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { useRouter } from "next/navigation";
 
-type userSettingsProps = {
-  user?: CurrentUserReturnType;
-};
+type userSettingsProps = {};
 
-const UserSettings: React.FC<userSettingsProps> = ({ user }) => {
+const UserSettings: React.FC<userSettingsProps> = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<Boolean>(false);
   const router = useRouter();
-  const axiosAuth = useAxiosAuth(user);
+  const axiosAuth = useAxiosAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const onSettingsOpen = () => {
     setIsSettingsOpen(!isSettingsOpen);
@@ -24,8 +24,6 @@ const UserSettings: React.FC<userSettingsProps> = ({ user }) => {
 
   const logout = async () => {
     const res = await axiosAuth.get(`auth/logout/${user?.id}`);
-
-    console.log({ res });
 
     const logoutResponse = await signOut({
       redirect: false,

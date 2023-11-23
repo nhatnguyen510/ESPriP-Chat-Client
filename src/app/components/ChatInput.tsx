@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { CurrentUserReturnType } from "@/../lib/session";
 import { useChatContext } from "@/../context/ChatProvider";
 import socket from "@/../lib/socket";
-import { useSession } from "next-auth/react";
-import { MessageProps, ConversationProps } from "../../../types/types";
+import { MessageProps, ConversationProps } from "@/../types";
+import { ListenEvent } from "@/../lib/enum";
 
-type chatInputProps = {
-  user?: CurrentUserReturnType;
-};
+type chatInputProps = {};
 
-const ChatInput: React.FC<chatInputProps> = ({ user }) => {
+const ChatInput: React.FC<chatInputProps> = () => {
   const [textInput, setTextInput] = useState<string>("");
-  const axiosAuth = useAxiosAuth(user);
+  const axiosAuth = useAxiosAuth();
   const {
     currentChat,
     setCurrentChat,
@@ -27,55 +25,72 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
     setTextInput(e.target.value);
   };
 
-  const onSendMessage = async () => {
-    console.log({ textInput });
+  // const onSendMessage = async () => {
+  //   console.log({ textInput });
 
+  //   try {
+  //     if (currentChat) {
+  //       const res = await axiosAuth.post<{
+  //         savedMessage: MessageProps;
+  //         updatedConversation: ConversationProps;
+  //       }>(`/conversation/${currentChat.id}/message`, {
+  //         message: textInput,
+  //       });
+  //       const sentMessage = res.data.savedMessage;
+  //       const updatedConversation = res.data.updatedConversation;
+
+  //       console.log({ sentMessage, updatedConversation });
+
+  //       // socket.emit("sendMessage", {
+  //       //   id: sentMessage.id,
+  //       //   conversation_id: sentMessage.conversation_id,
+  //       //   sender_id: user?.id,
+  //       //   receiver_id: selectedUser?.id,
+  //       //   seen: sentMessage.seen,
+  //       //   message: textInput,
+  //       //   lastMessage: updatedConversation.lastMessage,
+  //       //   lastMessageAt: updatedConversation.lastMessageAt,
+  //       // });
+
+  //       setMessages?.((prev) => [...prev, sentMessage]);
+
+  //       setCurrentChat?.((prev) => {
+  //         return {
+  //           ...(prev as any),
+  //           last_message: updatedConversation.last_message,
+  //           last_message_at: updatedConversation.last_message_at,
+  //         };
+  //       });
+
+  //       // Update lastMessage and lastMessageAt in conversations
+  //       setConversations?.((prev) => {
+  //         const index = prev.findIndex(
+  //           (conversation) => conversation.id == updatedConversation.id
+  //         );
+  //         const newConversations = [...prev];
+  //         newConversations[index].last_message_at =
+  //           updatedConversation.last_message_at;
+  //         newConversations[index].last_message =
+  //           updatedConversation.last_message;
+  //         return newConversations;
+  //       });
+
+  //       setTextInput("");
+  //     }
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
+
+  const onSendMessage = async () => {
     try {
       if (currentChat) {
-        const res = await axiosAuth.post<{
-          savedMessage: MessageProps;
-          updatedConversation: ConversationProps;
-        }>(`/conversation/${currentChat.id}/message`, {
-          message: textInput,
-        });
-        const sentMessage = res.data.savedMessage;
-        const updatedConversation = res.data.updatedConversation;
-
-        console.log({ sentMessage, updatedConversation });
-
-        // socket.emit("sendMessage", {
-        //   id: sentMessage.id,
-        //   conversation_id: sentMessage.conversation_id,
-        //   sender_id: user?.id,
-        //   receiver_id: selectedUser?.id,
-        //   seen: sentMessage.seen,
-        //   message: textInput,
-        //   lastMessage: updatedConversation.lastMessage,
-        //   lastMessageAt: updatedConversation.lastMessageAt,
-        // });
-
-        setMessages?.((prev) => [...prev, sentMessage]);
-
-        setCurrentChat?.((prev) => {
-          return {
-            ...(prev as any),
-            last_message: updatedConversation.last_message,
-            last_message_at: updatedConversation.last_message_at,
-          };
-        });
-
-        // Update lastMessage and lastMessageAt in conversations
-        setConversations?.((prev) => {
-          const index = prev.findIndex(
-            (conversation) => conversation.id == updatedConversation.id
-          );
-          const newConversations = [...prev];
-          newConversations[index].last_message_at =
-            updatedConversation.last_message_at;
-          newConversations[index].last_message =
-            updatedConversation.last_message;
-          return newConversations;
-        });
+        const result = await axiosAuth.post(
+          `/conversation/${currentChat.id}/message`,
+          {
+            message: textInput,
+          }
+        );
 
         setTextInput("");
       }
@@ -84,6 +99,40 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
     }
   };
 
+  useEffect(() => {
+    socket.on(
+      ListenEvent.MessageSent,
+      (data: {
+        message: MessageProps;
+        updatedConversation: ConversationProps;
+      }) => {
+        const sentMessage = data.message;
+        const updatedConversation = data.updatedConversation;
+
+        if (currentChat?.id == updatedConversation.id) {
+          setMessages?.((prev) => [...prev, sentMessage]);
+          setCurrentChat?.(updatedConversation);
+        }
+
+        // Update lastMessage and lastMessageAt in conversations
+        setConversations?.((prev) => {
+          const index = prev.findIndex(
+            (conversation) => conversation.id == updatedConversation.id
+          );
+          const newConversations = [...prev];
+          newConversations[index] = updatedConversation;
+
+          return newConversations;
+        });
+      }
+    );
+
+    return () => {
+      socket.off(ListenEvent.MessageSent);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChat?.id]);
+
   return (
     <>
       <div className="mb-2 h-16 border-t-2 border-gray-200 p-2">
@@ -91,7 +140,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
           <span className="flex items-center">
             <button
               type="button"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -126,7 +175,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
           <div className="flex items-center">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -145,7 +194,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
             </button>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -170,7 +219,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
             </button>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +239,7 @@ const ChatInput: React.FC<chatInputProps> = ({ user }) => {
             <button
               type="button"
               onClick={onSendMessage}
-              className="inline-flex items-center justify-center rounded-lg bg-blue-500 px-4 py-3 text-white transition duration-500 ease-in-out focus:outline-none hover:bg-blue-400"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-500 px-4 py-3 text-white transition duration-500 ease-in-out hover:bg-blue-400 focus:outline-none"
             >
               <span className="font-bold">Send</span>
               <svg

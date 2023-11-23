@@ -3,7 +3,7 @@
 import React, { use, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import ChatMessage from "./ChatMessage";
-import { MessageProps } from "@/../types/types";
+import { ConversationProps, MessageProps } from "@/../types";
 import { CurrentUserReturnType } from "@/../lib/session";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import socket from "@/../lib/socket";
@@ -11,12 +11,12 @@ import { useChatContext } from "@/../context/ChatProvider";
 import LoadingSpinner from "./LoadingSpinner";
 import { BsArrowDownCircle } from "react-icons/bs";
 import { useMessages } from "@/../lib/hooks/useMessages";
+import { EmitEvent, ListenEvent } from "@/../lib/enum";
+import { useSession } from "next-auth/react";
 
-type chatHistoryProps = {
-  user?: CurrentUserReturnType;
-};
+type chatHistoryProps = {};
 
-const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
+const ChatHistory: React.FC<chatHistoryProps> = () => {
   const {
     currentChat,
     setCurrentChat,
@@ -26,7 +26,9 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
     setConversations,
     selectedUser,
   } = useChatContext();
-  const axiosAuth = useAxiosAuth(user);
+  const axiosAuth = useAxiosAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<HTMLSpanElement | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
@@ -38,7 +40,9 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
   const [isScrollDownBtnVisible, setIsScrollDownBtnVisible] =
     useState<boolean>(false);
 
-  const { lastMessage, isLastMessageSeen, noMoreMessages } = useMessages(
+  const [noMoreMessages, setNoMoreMessages] = useState<boolean>(false);
+
+  const { lastMessage, isLastMessageSeen } = useMessages(
     messages,
     currentChat,
     user?.id
@@ -63,7 +67,10 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         }
       );
 
-      console.log("fetchMoreMessages", { data });
+      if (!data.length) {
+        setNoMoreMessages(true);
+        return;
+      }
 
       setMessages?.((prev) => [...data, ...prev]);
 
@@ -94,6 +101,8 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         );
 
         setMessages?.([...messageRes?.data]);
+
+        setNoMoreMessages(false);
       }
     };
 
@@ -103,7 +112,11 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
 
   // Scroll to bottom of messages
   useEffect(() => {
-    lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
+    const timer = setTimeout(() => {
+      lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [selectedUser?.id, currentChat?.last_message?.id]);
 
   // Mark messages as seen
@@ -118,8 +131,6 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         const { data } = await axiosAuth.post(
           `/conversation/${currentChat?.id}/message/seen`
         );
-
-        console.log("markMessagesAsSeen", { data });
       };
 
       markMessagesAsSeen();
@@ -155,80 +166,58 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         })
       );
 
-      // socket.emit("markMessagesAsSeen", {
-      //   conversation_id: currentChat?.id,
-      //   sender_id: user?.id,
-      //   receiver_id: selectedUser?.id,
-      //   seen: true,
-      // });
+      socket.emit(EmitEvent.MarkMessageAsSeen, {
+        conversation_id: currentChat?.id,
+        sender_id: user?.id,
+        receiver_id: selectedUser?.id,
+        seen: true,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat?.id, messages?.length, selectedUser?.id, user?.id]);
 
-  // // Receive message
-  // useEffect(() => {
-  //   const onReceiveMessage = (
-  //     data: MessageProps & {
-  //       last_message_at: string;
-  //       last_message: MessageProps;
-  //     }
-  //   ) => {
-  //     console.log("Receiving message: ", data);
-  //     if (currentChat?.id === data.conversation_id) {
-  //       console.log("Adding message to state");
-  //       setMessages?.((prev) => [
-  //         ...(prev as any),
-  //         {
-  //           _id: data.id,
-  //           conversation_id: data.conversation_id,
-  //           message: data.message,
-  //           sender_id: data.sender_id,
-  //           seen: data.seen,
-  //         },
-  //       ]);
-  //     }
+  // Receive message
+  useEffect(() => {
+    const onReceiveMessage = (data: {
+      message: MessageProps;
+      updatedConversation: ConversationProps;
+    }) => {
+      console.log("Receiving message: ", data);
+      const message = data.message;
+      const updatedConversation = data.updatedConversation;
+      if (currentChat?.id === updatedConversation.id) {
+        console.log("Adding message to state");
+        setMessages?.((prev) => [...prev, message]);
+        setCurrentChat?.(updatedConversation);
+      }
 
-  //     // update conversation last message
-  //     setConversations?.((prev) => {
-  //       const index = prev.findIndex(
-  //         (conversation) => conversation.id == data.conversation_id
-  //       );
-  //       const newConversations = [...prev];
-  //       newConversations[index].last_message_at = data.last_message_at;
-  //       newConversations[index].last_message = data.last_message;
-  //       return newConversations;
-  //     });
+      // update conversation last message
+      setConversations?.((prev) => {
+        const index = prev.findIndex(
+          (conversation) => conversation.id == updatedConversation.id
+        );
+        const newConversations = [...prev];
+        newConversations[index] = updatedConversation;
 
-  //     // update current chat last message
-  //     setCurrentChat?.((prev) => {
-  //       if (prev?.id === data.conversation_id) {
-  //         return {
-  //           ...(prev as any),
-  //           last_message_at: data.last_message_at,
-  //           last_message: data.last_message,
-  //         };
-  //       }
+        return newConversations;
+      });
+    };
 
-  //       return prev;
-  //     });
-  //   };
+    socket.on(ListenEvent.ReceiveMessage, onReceiveMessage);
 
-  //   socket.on("receiveMessage", onReceiveMessage);
-
-  //   return () => {
-  //     socket.off("receiveMessage", onReceiveMessage);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [currentChat?.id]);
+    return () => {
+      socket.off(ListenEvent.ReceiveMessage, onReceiveMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChat?.id]);
 
   // Observe the old message to fetch more messages when scrolling to the top
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && messages?.length) {
+        if (entry.isIntersecting && !noMoreMessages) {
           fetchMoreMessages();
-          console.log("Is intersecting");
         }
       },
       {
@@ -246,7 +235,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
 
     // Cleanup the observer when the component unmounts
     return () => observer.disconnect();
-  }, [fetchMoreMessages, messages?.length]);
+  }, [fetchMoreMessages, messages?.length, noMoreMessages]);
 
   return (
     <>
@@ -256,7 +245,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
         onScroll={() => {
           if (
             chatContainerRef.current &&
-            messages!.length > 20 &&
+            !noMoreMessages &&
             Math.floor(
               (chatContainerRef.current.scrollTop /
                 (chatContainerRef.current.scrollHeight -
@@ -269,7 +258,7 @@ const ChatHistory: React.FC<chatHistoryProps> = ({ user }) => {
             setIsScrollDownBtnVisible(false);
           }
         }}
-        className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400"
+        className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400 [&>*:first-child]:mt-auto"
       >
         {messages?.length && !noMoreMessages && (
           <span ref={loadingRef} className="flex justify-center">

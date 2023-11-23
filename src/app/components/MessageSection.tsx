@@ -5,20 +5,20 @@ import { BsPencilSquare, BsSearch } from "react-icons/bs";
 import Avatar from "@/app/components/Avatar";
 import { useChatContext } from "@/../context/ChatProvider";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
-import { CurrentUserReturnType } from "@/../lib/session";
+import { CurrentUserReturnType, getCurrentUser } from "@/../lib/session";
 import socket from "@/../lib/socket";
-import { ConversationProps, FriendProps } from "@/../types/types";
+import { ConversationProps, FriendProps } from "@/../types";
 import { format, parseISO } from "date-fns";
 import ConversationList from "./ConversationList";
 import Button from "./Button";
 import { AxiosResponse } from "axios";
+import { ListenEvent, Status } from "@/../lib/enum";
+import { useSession } from "next-auth/react";
 
-interface MessageSectionProps {
-  user?: CurrentUserReturnType;
-}
+interface MessageSectionProps {}
 
-const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
-  const axiosAuth = useAxiosAuth(user);
+const MessageSection: React.FC<MessageSectionProps> = () => {
+  const axiosAuth = useAxiosAuth();
 
   const fakeOnlineFriends = [
     "60f9a1a0b3b3a1b4a8a0b3b3",
@@ -79,6 +79,8 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
     setConversations,
   } = useChatContext();
 
+  const { status } = useSession();
+
   useEffect(() => {
     // get friends and conversations
     const fetchFriendsAndConversation = async () => {
@@ -91,54 +93,48 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
         conversationsData,
       ]);
 
-      console.log("fetchFriendsAndConversation", {
-        friendsRes,
-        conversationsRes,
-      });
-
       setConversations?.(conversationsRes?.data);
       setFriendList?.(friendsRes?.data);
     };
 
-    fetchFriendsAndConversation();
+    status == "authenticated" && fetchFriendsAndConversation();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [axiosAuth, status]);
 
-  // useEffect(() => {
-  //   const onUserOnline = (data: { userId: string; status: string }) => {
-  //     console.log("onUserOnline", { data });
-  //     if (data.status == "Online" && !onlineFriends?.includes(data.userId)) {
-  //       setOnlineFriends?.((prev) => [...prev, data.userId]);
-  //     }
-  //   };
-  //   const onUserOffline = (data: { userId: string; status: string }) => {
-  //     console.log("onUserOffline", { data });
-  //     if (data.status == "Offline") {
-  //       setOnlineFriends?.((prev) =>
-  //         prev.filter((friendId) => friendId !== data.userId)
-  //       );
-  //     }
-  //   };
-  //   const onFriendsOnline = (data: any) => {
-  //     console.log("onFriendsOnline", { data });
-  //     setOnlineFriends?.(data);
-  //   };
+  useEffect(() => {
+    const onUserOnline = (data: { userId: string; status: string }) => {
+      if (
+        data.status == Status.Online &&
+        !onlineFriends?.includes(data.userId)
+      ) {
+        setOnlineFriends?.((prev) => [...prev, data.userId]);
+      }
+    };
+    const onUserOffline = (data: { userId: string; status: string }) => {
+      if (data.status == Status.Offline) {
+        setOnlineFriends?.((prev) =>
+          prev.filter((friendId) => friendId !== data.userId)
+        );
+      }
+    };
+    const onFriendsOnline = (data: any) => {
+      setOnlineFriends?.(data);
+    };
 
-  //   socket.on("userOnline", onUserOnline);
+    socket.on(ListenEvent.UserOnline, onUserOnline);
 
-  //   socket.on("userOffline", onUserOffline);
+    socket.on(ListenEvent.UserOffline, onUserOffline);
 
-  //   socket.on("friendsOnline", onFriendsOnline);
+    socket.on(ListenEvent.OnlineFriends, onFriendsOnline);
 
-  //   return () => {
-  //     socket.off("userOnline", onUserOnline);
-  //     socket.off("friendsOnline", onFriendsOnline);
-  //     socket.off("userOffline", onUserOffline);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [onlineFriends]);
-
-  console.log({ user });
+    return () => {
+      socket.off(ListenEvent.UserOnline, onUserOnline);
+      socket.off(ListenEvent.UserOffline, onUserOffline);
+      socket.off(ListenEvent.OnlineFriends, onFriendsOnline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineFriends]);
 
   return (
     <>
@@ -185,7 +181,7 @@ const MessageSection: React.FC<MessageSectionProps> = ({ user }) => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4">
           <ConversationList />
         </div>
       </div>

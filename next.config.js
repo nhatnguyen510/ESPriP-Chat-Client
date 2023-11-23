@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   images: {
     domains: ["images.unsplash.com", "i.pravatar.cc"],
+  },
+  modularizeImports: {
+    lodash: {
+      transform: "lodash/{{member}}",
+    },
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.externals.push({

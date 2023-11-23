@@ -1,4 +1,3 @@
-import axios from "axios";
 import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth/next";
 import CredentialProvider from "next-auth/providers/credentials";
@@ -28,10 +27,8 @@ export const nextAuthOptions: NextAuthOptions = {
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.message);
+          throw new Error(JSON.stringify(data));
         }
-
-        console.log({ data });
 
         return data;
       },
@@ -45,10 +42,18 @@ export const nextAuthOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (trigger === "update" && session) {
+      if (
+        trigger === "update" &&
+        session.access_token &&
+        session.refresh_token
+      ) {
         console.log("Session: ", session);
 
-        return { ...token, ...session.user };
+        return {
+          ...token,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        };
       }
 
       if (user) {
