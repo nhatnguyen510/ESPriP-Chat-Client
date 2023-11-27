@@ -7,11 +7,8 @@ import {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
-import { CurrentUserReturnType } from "../session";
-import { getSession, getCsrfToken } from "next-auth/react";
-import { refresh } from "../api/auth";
+import { useSession } from "next-auth/react";
+import { useSessionExpiredModalStore } from "../zustand/store";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: "api/v1",
@@ -23,7 +20,8 @@ const axiosInstance: AxiosInstance = axios.create({
 const useAxiosAuth = () => {
   const { data: session, status, update } = useSession();
   const user = session?.user;
-  const router = useRouter();
+  const refreshToken = useRefreshToken(user);
+  const openModal = useSessionExpiredModalStore((state) => state.open);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -37,7 +35,6 @@ const useAxiosAuth = () => {
 
     const onRequest = async (config: InternalAxiosRequestConfig) => {
       if (user?.access_token) {
-        // Create a new headers object to avoid direct mutation
         config.headers.Authorization = `Bearer ${user?.access_token}`;
         config.headers["x-token-id"] = user?.refresh_token_id;
       }
@@ -62,38 +59,19 @@ const useAxiosAuth = () => {
           const {
             access_token: newAccessToken,
             refresh_token: newRefreshToken,
-          } = await refresh(
-            user?.refresh_token as string,
-            user?.refresh_token_id as string
-          );
+          } = await refreshToken();
 
           if (newAccessToken) {
-            // Create a new headers object to avoid direct mutation
             const updatedHeaders = {
               ...prevRequest.headers,
               Authorization: `Bearer ${newAccessToken}`,
             };
 
-            // const csrfToken = await getCsrfToken();
-            // const updatedSession = await getSession({
-            //   req: {
-            //     body: {
-            //       csrfToken,
-            //       data: {
-            //         user: {
-            //           access_token: newAccessToken,
-            //           refresh_token: newRefreshToken,
-            //         },
-            //       },
-            //     },
-            //   },
-            // });
             await update({
               access_token: newAccessToken,
               refresh_token: newRefreshToken,
             });
 
-            // Retry the original request with the updated headers
             return axiosInstance({
               ...prevRequest,
               headers: updatedHeaders,
@@ -101,12 +79,7 @@ const useAxiosAuth = () => {
           }
         } catch (err) {
           console.log("Something went wrong while refreshing token: ", err);
-          const signOutResponse = await signOut({
-            redirect: false,
-            callbackUrl: "/login",
-          });
-
-          router.push(signOutResponse?.url);
+          openModal();
           return Promise.reject(err);
         }
       } else {

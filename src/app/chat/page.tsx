@@ -2,7 +2,6 @@ import React from "react";
 import SideBar from "../components/SideBar";
 import ChatSection from "../components/ChatSection";
 import { getCurrentUser } from "@/../lib/session";
-import UserFriendList from "../components/UserFriendList";
 import MessageSection from "../components/MessageSection";
 
 export interface chatProps {}

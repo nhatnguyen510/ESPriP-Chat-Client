@@ -6,6 +6,8 @@ import { getCsrfToken, getSession, useSession } from "next-auth/react";
 import socket from "../lib/socket";
 import { createDiffieHellman, DiffieHellman } from "crypto";
 import { refresh } from "../lib/api/auth";
+import { useSessionExpiredModalStore } from "../lib/zustand/store";
+import useRefreshToken from "../lib/hooks/useRefreshToken";
 
 type ChatContextType = {
   currentChat: ConversationProps | null;
@@ -37,6 +39,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [conversations, setConversations] = useState<ConversationProps[]>([]);
   const keys = useRef<DiffieHellman | null>(null);
   const { data: session, status, update } = useSession();
+  const refreshToken = useRefreshToken(session?.user);
+  const { open } = useSessionExpiredModalStore();
 
   useEffect(() => {
     function connectSocket() {
@@ -46,33 +50,22 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       socket.on("connect_error", async (err) => {
         console.log("Error connecting to socket: ", err);
         socket.close();
-        const { access_token, refresh_token } = await refresh(
-          session?.user.refresh_token as string,
-          session?.user.refresh_token_id as string
-        );
 
-        // const csrfToken = await getCsrfToken();
-        // const updatedSession = await getSession({
-        //   req: {
-        //     body: {
-        //       csrfToken,
-        //       data: {
-        //         user: {
-        //           access_token,
-        //           refresh_token,
-        //         },
-        //       },
-        //     },
-        //   },
-        // });
-        await update({
-          access_token,
-          refresh_token,
-        });
+        try {
+          const { access_token, refresh_token } = await refreshToken();
 
-        socket.auth = { token: access_token };
+          await update({
+            access_token,
+            refresh_token,
+          });
 
-        socket.connect();
+          socket.auth = { token: access_token };
+
+          socket.connect();
+        } catch (err) {
+          console.log("Error refreshing token: ", err);
+          open();
+        }
       });
     }
 

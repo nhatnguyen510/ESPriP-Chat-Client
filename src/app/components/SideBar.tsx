@@ -6,6 +6,9 @@ import SettingsModal from "./SettingsModal";
 import { useState } from "react";
 import Avatar from "./Avatar";
 import { CurrentUserReturnType } from "@/../lib/session";
+import { LogoutModal } from "./Modal/LogoutModal";
+import { Button, useDisclosure } from "@nextui-org/react";
+import { HiArrowLeftOnRectangle } from "react-icons/hi2";
 
 interface DesktopSidebarProps {
   currentUser: CurrentUserReturnType;
@@ -14,6 +17,7 @@ interface DesktopSidebarProps {
 const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentUser }) => {
   const routes = useRoutes();
   const [isOpen, setIsOpen] = useState(false);
+  const { isOpen: isModalOpen, onOpen, onOpenChange } = useDisclosure();
 
   return (
     <>
@@ -22,6 +26,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentUser }) => {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
       />
+      <LogoutModal isOpen={isModalOpen} onOpenChange={onOpenChange} />
       <div
         className="
         lg:w-30 
@@ -47,18 +52,20 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentUser }) => {
                 label={item.label}
                 icon={item.icon}
                 active={item.active}
-                onClick={item.onClick}
               />
             ))}
           </ul>
         </nav>
-        <nav className="mt-4 flex w-full flex-col items-center justify-between">
+        <nav className="mx-2 flex w-full items-center justify-center">
           <div
             onClick={() => setIsOpen(true)}
             className="cursor-pointer transition hover:opacity-75"
           >
             <Avatar />
           </div>
+          <Button isIconOnly variant="light" onPress={onOpen}>
+            <HiArrowLeftOnRectangle className="h-6 w-6" />
+          </Button>
         </nav>
       </div>
     </>

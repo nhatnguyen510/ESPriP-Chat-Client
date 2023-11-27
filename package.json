@@ -14,6 +14,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.16",
     "@hookform/resolvers": "^3.1.0",
+    "@nextui-org/react": "^2.2.9",
     "@types/node": "18.15.11",
     "@types/react": "18.0.33",
     "@types/react-dom": "18.0.11",
@@ -22,6 +23,7 @@
     "date-fns": "^2.30.0",
     "eslint": "8.37.0",
     "eslint-config-next": "13.3.0",
+    "framer-motion": "^10.16.5",
     "lodash": "^4.17.21",
     "mem": "^9.0.2",
     "next": "^13.4.2",
@@ -40,7 +42,8 @@
     "tailwind-scrollbar": "^3.0.0",
     "tailwindcss": "3.3.1",
     "typescript": "5.0.3",
-    "yup": "^1.2.0"
+    "yup": "^1.2.0",
+    "zustand": "^4.4.6"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.195",
