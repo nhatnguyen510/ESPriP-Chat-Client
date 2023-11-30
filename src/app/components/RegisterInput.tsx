@@ -1,5 +1,3 @@
-// Remove the import for `react-hook-form` related types and imports.
-
 import { VscEye, VscEyeClosed } from "react-icons/vsc";
 import LoadingSpinner from "./LoadingSpinner";
 import { useState } from "react";
@@ -13,7 +11,7 @@ type inputProps = {
   required?: boolean;
   errors: any;
   control: any;
-  trigger?: any;
+  onChange?: () => void;
   handleDisplayPassword?: () => void;
   handleDisplayConfirmedPassword?: () => void;
 };
@@ -26,7 +24,7 @@ const Input: React.FC<inputProps> = ({
   required,
   errors,
   control,
-  trigger,
+  onChange,
   handleDisplayPassword,
   handleDisplayConfirmedPassword,
 }) => {
@@ -55,11 +53,11 @@ const Input: React.FC<inputProps> = ({
               placeholder={`Enter your ${label}`}
               onChange={async (e) => {
                 field.onChange(e);
-                setIsLoading(true);
-                if (id === "username" || id === "email") {
-                  await trigger(id);
+                if (onChange) {
+                  setIsLoading(true);
+                  onChange();
+                  setIsLoading(false);
                 }
-                setIsLoading(false);
               }}
               className={`
                 w-full rounded border p-2 ${

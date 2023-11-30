@@ -7,9 +7,13 @@ import Input from "@/app/components/RegisterInput";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { yupResolver } from "@hookform/resolvers/yup";
+import { zodResolver } from "@hookform/resolvers/zod";
 import schema, { FormData } from "@/../lib/validation/registerSchema";
 import { toast } from "react-toastify";
+import useRefinement, {
+  RefinementCallback,
+} from "@/../lib/hooks/useRefinement";
+import { register, verifyUsername, verifyEmail } from "@/../lib/api/auth";
 
 export default function Register() {
   const [isLoading, setIsLoading] = useState<Boolean>(false);
@@ -18,13 +22,31 @@ export default function Register() {
   const [showConfirmedPassword, setShowConfirmedPassword] =
     useState<Boolean>(false);
 
+  const checkNameToBeUnique = (): RefinementCallback<FormData> => {
+    return async (data) => {
+      return await verifyUsername(data.username);
+    };
+  };
+
+  const checkEmailToBeUnique = (): RefinementCallback<FormData> => {
+    return async (data) => {
+      return await verifyEmail(data.email);
+    };
+  };
+
+  const uniqueName = useRefinement(checkNameToBeUnique(), {
+    debounce: 1000,
+  });
+
+  const uniqueEmail = useRefinement(checkEmailToBeUnique(), {
+    debounce: 1000,
+  });
+
   const {
     control,
-    register,
     handleSubmit,
     setError,
     formState: { errors },
-    trigger,
   } = useForm<FormData>({
     defaultValues: {
       username: "",
@@ -36,39 +58,45 @@ export default function Register() {
       // photo_url: "",
     },
 
-    resolver: yupResolver(schema),
-    mode: "onChange",
-    criteriaMode: "all",
+    resolver: zodResolver(
+      schema
+        .refine(uniqueName, {
+          message: "Username is already taken",
+          path: ["username"],
+        })
+        .refine(uniqueEmail, {
+          message: "Email is already taken",
+          path: ["email"],
+        })
+    ),
+    mode: "all",
+    // criteriaMode: "all",
   });
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setIsLoading(true);
-    const response = await toast.promise(
-      fetch("/api/v1/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+
+    try {
+      const response = await toast.promise(
+        register(data),
+        {
+          pending: "Registering...",
+          success: "Registered successfully 🎉",
+          error: "Something went wrong 😢",
         },
-        body: JSON.stringify(data),
-      }),
-      {
-        pending: "Registering...",
-        success: "Registered successfully 🎉",
-        error: "Something went wrong 😢",
-      },
-      {
-        position: "top-center",
-        hideProgressBar: true,
-      }
-    );
+        {
+          position: "top-center",
+          hideProgressBar: true,
+        }
+      );
 
-    const responseData = await response.json();
+      console.log("response: ", response);
 
-    if (response.ok) {
       router.push("/login");
-    } else {
-      console.log({ responseData });
+    } catch (err) {
+      console.log("err: ", err);
     }
+
     setIsLoading(false);
   };
 
@@ -93,7 +121,9 @@ export default function Register() {
             label="Username"
             disabled={!!isLoading}
             control={control}
-            trigger={trigger}
+            onChange={() => {
+              uniqueName.invalidate();
+            }}
             errors={errors}
             required={true}
           />
@@ -142,11 +172,12 @@ export default function Register() {
             type="email"
             disabled={!!isLoading}
             control={control}
-            trigger={trigger}
+            onChange={() => {
+              uniqueEmail.invalidate();
+            }}
             errors={errors}
             required={true}
           />
-          {/* Display error for email field */}
           {errors.email && (
             <p className="mt-1 text-sm text-red-500">{errors.email?.message}</p>
           )}
@@ -160,6 +191,11 @@ export default function Register() {
             required={true}
             handleDisplayPassword={handleDisplayPassword}
           />
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors.password?.message}
+            </p>
+          )}
           <Input
             id="confirmed_password"
             label="Password Confirmation"
@@ -170,6 +206,12 @@ export default function Register() {
             required={true}
             handleDisplayConfirmedPassword={handleDisplayConfirmedPassword}
           />
+          {errors.confirmed_password && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors.confirmed_password?.message}
+            </p>
+          )}
+
           <div className="mt-2 flex items-center">
             <input
               type="checkbox"
@@ -198,7 +240,7 @@ export default function Register() {
           <div className="my-4 flex items-center justify-end space-x-4">
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-8 py-2 uppercase text-gray-100 transition duration-150 hover:bg-blue-700 hover:shadow-xl"
+              className="rounded-lg bg-blue-600 px-8 py-2 uppercase text-gray-100 duration-150 transition hover:bg-blue-700 hover:shadow-xl"
               onClick={handleSubmit(onSubmit)}
             >
               Sign Up

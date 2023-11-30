@@ -10,19 +10,12 @@ import Modal from "./Modal";
 import Button from "./Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { CurrentUserReturnType } from "@/../lib/session";
-
 interface SettingsModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  currentUser: CurrentUserReturnType;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  currentUser = {},
-}) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 

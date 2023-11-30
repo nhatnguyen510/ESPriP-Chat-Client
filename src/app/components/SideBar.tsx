@@ -10,22 +10,16 @@ import { LogoutModal } from "./Modal/LogoutModal";
 import { Button, useDisclosure } from "@nextui-org/react";
 import { HiArrowLeftOnRectangle } from "react-icons/hi2";
 
-interface DesktopSidebarProps {
-  currentUser: CurrentUserReturnType;
-}
+interface DesktopSidebarProps {}
 
-const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentUser }) => {
+const DesktopSidebar: React.FC<DesktopSidebarProps> = () => {
   const routes = useRoutes();
   const [isOpen, setIsOpen] = useState(false);
   const { isOpen: isModalOpen, onOpen, onOpenChange } = useDisclosure();
 
   return (
     <>
-      <SettingsModal
-        currentUser={currentUser}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-      />
+      <SettingsModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
       <LogoutModal isOpen={isModalOpen} onOpenChange={onOpenChange} />
       <div
         className="

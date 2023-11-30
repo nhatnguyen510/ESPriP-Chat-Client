@@ -11,8 +11,6 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
 
   const isOnline = onlineFriends?.includes(selectedUser?.id as string);
 
-  console.log({ selectedUser });
-
   return (
     <>
       <div className="flex h-24 justify-between border-b-2 border-gray-200 p-3 sm:items-center">
@@ -41,7 +39,7 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
         <div className="flex items-center space-x-2">
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +58,7 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
           </button>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +77,7 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
           </button>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 transition duration-500 ease-in-out focus:outline-none hover:bg-gray-300"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

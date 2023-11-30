@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatProvider } from "@/../context/ChatProvider";
-import { SessionExpiredModal } from "../components/Modal/SessionExpiredModal";
+import { SessionExpiredModal } from "../../components/Modal/SessionExpiredModal";
 import { useSessionExpiredModalStore } from "@/../lib/zustand/store";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";

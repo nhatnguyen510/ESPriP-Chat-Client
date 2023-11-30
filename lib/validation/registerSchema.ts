@@ -1,51 +1,37 @@
-import * as yup from "yup";
-import { debounceVerifyUsername, debounceVerifyEmail } from "../debounce";
+import { z } from "zod";
 
-const schema = yup
-  .object()
-  .shape({
-    username: yup
+const schema = z
+  .object({
+    username: z
       .string()
-      .required()
-      .test(
-        "valid username",
-        "Username is already taken",
-        (value, testContext) =>
-          new Promise((resolve) =>
-            debounceVerifyUsername(value, testContext, resolve)
-          )
-      ),
-
-    password: yup.string().required(),
-    first_name: yup
+      .min(4, { message: "Must be greater than 4 letters" })
+      .max(20, { message: "Must be smaller than 20 letters" }),
+    password: z
       .string()
-      .required()
-      .min(5, "Must be greater than 5 letters")
-      .max(10, "Must be smaller than 10 letters"),
-    last_name: yup
+      .min(8, { message: "Must be greater than 8 letters" })
+      .max(20, { message: "Must be smaller than 20 letters" })
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,15}$/, {
+        message:
+          "Must contain at least 1 uppercase, 1 lowercase, 1 number and 1 special character",
+      }),
+    first_name: z
       .string()
-      .required()
-      .min(5, "Must be greater than 5 letters")
-      .max(10, "Must be smaller than 10 letters"),
-    email: yup
+      .min(4, { message: "Must be greater than 4 letters" })
+      .max(20, { message: "Must be smaller than 20 letters" }),
+    last_name: z
       .string()
-      .email("Invalid email")
-      .required()
-      .test(
-        "valid email",
-        "Email is already taken",
-        (value, testContext) =>
-          new Promise((resolve) =>
-            debounceVerifyEmail(value, testContext, resolve)
-          )
-      ),
-    confirmed_password: yup
+      .min(4, { message: "Must be greater than 4 letters" })
+      .max(20, { message: "Must be smaller than 20 letters" }),
+    email: z.string().email({ message: "Invalid email" }),
+    confirmed_password: z
       .string()
-      .oneOf([yup.ref("password")], "Passwords must match")
-      .required(),
+      .min(8, { message: "Must be greater than 8 letters" })
+      .max(20, { message: "Must be smaller than 20 letters" }),
   })
-  .required();
-
-export type FormData = yup.InferType<typeof schema>;
+  .refine((data) => data.password === data.confirmed_password, {
+    message: "Passwords must match",
+    path: ["confirmed_password"],
+  });
+export type FormData = z.infer<typeof schema>;
 
 export default schema;
