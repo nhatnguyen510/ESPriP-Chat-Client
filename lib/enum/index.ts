@@ -17,3 +17,9 @@ export enum Status {
   Online = "online",
   Offline = "offline",
 }
+
+export enum FriendStatus {
+  Pending = "pending",
+  Accepted = "accepted",
+  Rejected = "rejected",
+}

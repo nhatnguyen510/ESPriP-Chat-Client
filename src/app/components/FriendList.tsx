@@ -1,124 +1,110 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Friend from "./Friend";
-import { FriendProps } from "../../../types";
-import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
+import {
+  Card,
+  CardBody,
+  Dropdown,
+  DropdownTrigger,
+  Image,
+  Button,
+  DropdownMenu,
+  DropdownItem,
+  useDisclosure,
+} from "@nextui-org/react";
+import NextImage from "next/image";
+import React from "react";
+import { IoIosMore } from "react-icons/io";
 import { useChatContext } from "@/../context/ChatProvider";
-import socket from "@/../lib/socket";
-import { useSession } from "next-auth/react";
-import { CurrentUserReturnType } from "@/../lib/session";
+import { RemoveFriendModal } from "./Modal/RemoveFriendModal";
+import { FriendProps } from "@/../types";
+import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
+import { AxiosError } from "axios";
+import { toast } from "react-hot-toast";
+import { FriendCard } from "./Friend";
 
-type friendListProps = {
-  user?: CurrentUserReturnType;
-};
+interface FriendListProps {
+  searchedFriends?: FriendProps[];
+}
 
-const FriendList: React.FC<friendListProps> = ({ user }) => {
-  const [friendList, setFriendList] = useState<FriendProps[]>([]);
+export const FriendList: React.FC<FriendListProps> = ({ searchedFriends }) => {
+  const axiosAuth = useAxiosAuth();
+  const { friendList, setFriendList, setConversations } = useChatContext();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedFriend, setSelectedFriend] =
+    React.useState<FriendProps | null>(null);
 
-  const axiosAuth = useAxiosAuth(user);
+  console.log("selectedFriend", selectedFriend);
 
-  const {
-    currentChat,
-    setCurrentChat,
-    onlineFriends,
-    setOnlineFriends,
-    selectedUser,
-    setSelectedUser,
-  } = useChatContext();
-
-  useEffect(() => {
-    // get friends
-    const fetchFriends = async () => {
-      const res = await axiosAuth.get(`/user/friends/`);
-
-      setFriendList(res?.data);
-    };
-
-    if (!friendList?.length) {
-      fetchFriends();
+  const onHandleAction = (key: any, friend: FriendProps) => {
+    setSelectedFriend(friend);
+    if (key === "view-profile") {
+      console.log("view profile");
+    } else if (key === "remove-friend") {
+      onOpen();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendList?.length]);
+  };
 
-  // useEffect(() => {
-  //   if (selectedUser?.id) {
-  //     //get conversation
-  //     const fetchChat = async () => {
-  //       try {
-  //         const { data } = await axiosAuth.get(
-  //           `/chat/conversation/${selectedUser.id}`
-  //         );
+  const handleRemoveFriend = async () => {
+    console.log("remove friend", selectedFriend);
 
-  //         console.log("fetchChat", { data });
-  //         setCurrentChat?.({ ...data });
-  //       } catch (err) {
-  //         console.log(err);
-  //       }
-  //     };
+    try {
+      const { data } = await axiosAuth.post<{
+        message: string;
+        conversation_id: string;
+      }>("/friends/remove", {
+        friend_id: selectedFriend?.id,
+      });
 
-  //     fetchChat();
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [selectedUser?.id]);
+      toast.success(
+        `You are no longer friends with ${selectedFriend?.username}`
+      );
 
-  useEffect(() => {
-    const onUserOnline = (data: { userId: string; status: string }) => {
-      console.log("onUserOnline", { data });
-      if (data.status == "Online" && !onlineFriends?.includes(data.userId)) {
-        setOnlineFriends?.((prev) => [...prev, data.userId]);
+      setFriendList?.((prev) =>
+        prev.filter((friend) => friend.id !== selectedFriend?.id)
+      );
+
+      setConversations?.((prev) =>
+        prev.filter((conversation) => conversation.id !== data.conversation_id)
+      );
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        console.log("error while removing friend", err);
+
+        toast.error("Something went wrong");
       }
-    };
-    const onUserOffline = (data: { userId: string; status: string }) => {
-      console.log("onUserOffline", { data });
-      if (data.status == "Offline") {
-        setOnlineFriends?.((prev) =>
-          prev.filter((friendId) => friendId !== data.userId)
-        );
-      }
-    };
-    const onFriendsOnline = (data: any) => {
-      console.log("onFriendsOnline", { data });
-      setOnlineFriends?.(data);
-    };
-
-    socket.on("userOnline", onUserOnline);
-
-    socket.on("userOffline", onUserOffline);
-
-    socket.on("friendsOnline", onFriendsOnline);
-
-    return () => {
-      socket.off("userOnline", onUserOnline);
-      socket.off("friendsOnline", onFriendsOnline);
-      socket.off("userOffline", onUserOffline);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onlineFriends]);
-
-  console.log({ onlineFriends });
+    }
+  };
 
   return (
     <>
-      <div className="w-full flex-1 overflow-y-auto">
-        {friendList?.map((friend) => (
-          <div
-            key={friend.id}
-            className="transition-all hover:bg-slate-100"
-            onClick={() => setSelectedUser?.(friend)}
-          >
-            <Friend
-              _id={friend.id}
-              username={friend.username}
-              first_name={friend.first_name}
-              last_name={friend.last_name}
-              avatarUrl={friend.avatarUrl}
+      <div className="grid grid-cols-2 gap-4">
+        {searchedFriends?.length ? (
+          searchedFriends.map((friend, i) => (
+            <FriendCard
+              key={friend.id}
+              friend={friend}
+              onHandleAction={onHandleAction}
             />
-          </div>
-        ))}
+          ))
+        ) : friendList?.length ? (
+          friendList.map((friend, i) => (
+            <FriendCard
+              key={friend.id}
+              friend={friend}
+              onHandleAction={onHandleAction}
+            />
+          ))
+        ) : (
+          <p className="text-sm text-gray-500">No friends</p>
+        )}
+
+        <RemoveFriendModal
+          username={selectedFriend?.username as string}
+          isOpen={isOpen}
+          onClose={onClose}
+          handleRemoveFriend={handleRemoveFriend}
+        />
       </div>
     </>
   );
 };
-
-export default FriendList;

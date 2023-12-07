@@ -1,25 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { BsPencilSquare, BsSearch } from "react-icons/bs";
 import Avatar from "@/app/components/Avatar";
-import { useChatContext } from "@/../context/ChatProvider";
-import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
-import { CurrentUserReturnType, getCurrentUser } from "@/../lib/session";
-import socket from "@/../lib/socket";
-import { ConversationProps, FriendProps } from "@/../types";
-import { format, parseISO } from "date-fns";
+import { FriendProps } from "@/../types";
 import ConversationList from "./ConversationList";
-import Button from "./Button";
-import { AxiosResponse } from "axios";
-import { ListenEvent, Status } from "@/../lib/enum";
-import { useSession } from "next-auth/react";
 
 interface MessageSectionProps {}
 
 const MessageSection: React.FC<MessageSectionProps> = () => {
-  const axiosAuth = useAxiosAuth();
-
   const fakeOnlineFriends = [
     "60f9a1a0b3b3a1b4a8a0b3b3",
     "60f9a1a0b3b3a1b4a8a0b3b4",
@@ -65,76 +54,6 @@ const MessageSection: React.FC<MessageSectionProps> = () => {
       last_name: "test5",
     },
   ];
-
-  const {
-    currentChat,
-    setCurrentChat,
-    friendList,
-    setFriendList,
-    onlineFriends,
-    setOnlineFriends,
-    selectedUser,
-    setSelectedUser,
-    conversations,
-    setConversations,
-  } = useChatContext();
-
-  const { status } = useSession();
-
-  useEffect(() => {
-    // get friends and conversations
-    const fetchFriendsAndConversation = async () => {
-      const friendsData = axiosAuth.get<FriendProps[]>(`/friends`);
-      const conversationsData =
-        axiosAuth.get<ConversationProps[]>(`/conversation`);
-
-      const [friendsRes, conversationsRes] = await Promise.all([
-        friendsData,
-        conversationsData,
-      ]);
-
-      setConversations?.(conversationsRes?.data);
-      setFriendList?.(friendsRes?.data);
-    };
-
-    status == "authenticated" && fetchFriendsAndConversation();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [axiosAuth, status]);
-
-  useEffect(() => {
-    const onUserOnline = (data: { userId: string; status: string }) => {
-      if (
-        data.status == Status.Online &&
-        !onlineFriends?.includes(data.userId)
-      ) {
-        setOnlineFriends?.((prev) => [...prev, data.userId]);
-      }
-    };
-    const onUserOffline = (data: { userId: string; status: string }) => {
-      if (data.status == Status.Offline) {
-        setOnlineFriends?.((prev) =>
-          prev.filter((friendId) => friendId !== data.userId)
-        );
-      }
-    };
-    const onFriendsOnline = (data: any) => {
-      setOnlineFriends?.(data);
-    };
-
-    socket.on(ListenEvent.UserOnline, onUserOnline);
-
-    socket.on(ListenEvent.UserOffline, onUserOffline);
-
-    socket.on(ListenEvent.OnlineFriends, onFriendsOnline);
-
-    return () => {
-      socket.off(ListenEvent.UserOnline, onUserOnline);
-      socket.off(ListenEvent.UserOffline, onUserOffline);
-      socket.off(ListenEvent.OnlineFriends, onFriendsOnline);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onlineFriends]);
 
   return (
     <>

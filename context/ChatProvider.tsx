@@ -1,13 +1,20 @@
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { FriendProps, ConversationProps, MessageProps } from "../types";
+import {
+  FriendProps,
+  ConversationProps,
+  MessageProps,
+  FriendRequestProps,
+} from "../types";
 import { getCsrfToken, getSession, useSession } from "next-auth/react";
 import socket from "../lib/socket";
 import { createDiffieHellman, DiffieHellman } from "crypto";
 import { refresh } from "../lib/api/auth";
 import { useSessionExpiredModalStore } from "../lib/zustand/store";
 import useRefreshToken from "../lib/hooks/useRefreshToken";
+import useAxiosAuth from "../lib/hooks/useAxiosAuth";
+import { ListenEvent, Status } from "../lib/enum";
 
 type ChatContextType = {
   currentChat: ConversationProps | null;
@@ -20,9 +27,15 @@ type ChatContextType = {
   setMessages: React.Dispatch<React.SetStateAction<MessageProps[]>>;
   friendList: FriendProps[];
   setFriendList: React.Dispatch<React.SetStateAction<FriendProps[]>>;
+  friendRequestsList: FriendRequestProps[];
+  setFriendRequestsList: React.Dispatch<
+    React.SetStateAction<FriendRequestProps[]>
+  >;
+  sentFriendRequests: FriendProps[];
+  setSentFriendRequests: React.Dispatch<React.SetStateAction<FriendProps[]>>;
   onlineFriends: string[];
   setOnlineFriends: React.Dispatch<React.SetStateAction<string[]>>;
-  conversations: ConversationProps[];
+  conversations: ConversationProps[] | null;
   setConversations: React.Dispatch<React.SetStateAction<ConversationProps[]>>;
 };
 
@@ -37,10 +50,51 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [friendList, setFriendList] = useState<FriendProps[]>([]);
   const [onlineFriends, setOnlineFriends] = useState<string[]>([]);
   const [conversations, setConversations] = useState<ConversationProps[]>([]);
+  const [friendRequestsList, setFriendRequestsList] = useState<
+    FriendRequestProps[]
+  >([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState<FriendProps[]>(
+    []
+  );
   const keys = useRef<DiffieHellman | null>(null);
   const { data: session, status, update } = useSession();
+  const axiosAuth = useAxiosAuth();
   const refreshToken = useRefreshToken(session?.user);
   const { open } = useSessionExpiredModalStore();
+
+  useEffect(() => {
+    // get all friends, conversations, sent friend requests, and friend requests list
+    const fetchAll = async () => {
+      const friendsData = axiosAuth.get<FriendProps[]>(`/friends`);
+      const conversationsData =
+        axiosAuth.get<ConversationProps[]>(`/conversation`);
+      const sentFriendRequestsData = axiosAuth.get<FriendProps[]>(
+        `/friends/requests/sent`
+      );
+      const friendRequestsListData = await axiosAuth.get<FriendRequestProps[]>(
+        `/friends/requests`
+      );
+
+      const [
+        friendsRes,
+        conversationsRes,
+        sentFriendRequestRes,
+        friendRequestsRes,
+      ] = await Promise.all([
+        friendsData,
+        conversationsData,
+        sentFriendRequestsData,
+        friendRequestsListData,
+      ]);
+
+      setConversations?.(conversationsRes?.data);
+      setFriendList?.(friendsRes?.data);
+      setSentFriendRequests?.(sentFriendRequestRes?.data);
+      setFriendRequestsList?.(friendRequestsRes?.data);
+    };
+
+    status == "authenticated" && fetchAll();
+  }, [axiosAuth, status]);
 
   useEffect(() => {
     function connectSocket() {
@@ -110,6 +164,40 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user, status]);
 
+  useEffect(() => {
+    const onUserOnline = (data: { userId: string; status: string }) => {
+      if (
+        data.status == Status.Online &&
+        !onlineFriends?.includes(data.userId)
+      ) {
+        setOnlineFriends?.((prev) => [...prev, data.userId]);
+      }
+    };
+    const onUserOffline = (data: { userId: string; status: string }) => {
+      if (data.status == Status.Offline) {
+        setOnlineFriends?.((prev) =>
+          prev?.filter((friendId) => friendId !== data.userId)
+        );
+      }
+    };
+    const onFriendsOnline = (data: any) => {
+      setOnlineFriends?.(data);
+    };
+
+    socket.on(ListenEvent.UserOnline, onUserOnline);
+
+    socket.on(ListenEvent.UserOffline, onUserOffline);
+
+    socket.on(ListenEvent.OnlineFriends, onFriendsOnline);
+
+    return () => {
+      socket.off(ListenEvent.UserOnline, onUserOnline);
+      socket.off(ListenEvent.UserOffline, onUserOffline);
+      socket.off(ListenEvent.OnlineFriends, onFriendsOnline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineFriends]);
+
   return (
     <ChatContext.Provider
       value={{
@@ -121,6 +209,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setMessages,
         friendList,
         setFriendList,
+        friendRequestsList,
+        setFriendRequestsList,
+        sentFriendRequests,
+        setSentFriendRequests,
         onlineFriends,
         setOnlineFriends,
         conversations,

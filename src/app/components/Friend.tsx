@@ -1,32 +1,76 @@
 import React from "react";
-import Img from "next/image";
+import NextImage from "next/image";
+import {
+  Card,
+  CardBody,
+  Dropdown,
+  DropdownTrigger,
+  Image,
+  Button,
+  DropdownMenu,
+  DropdownItem,
+  useDisclosure,
+} from "@nextui-org/react";
 import { FriendProps } from "@/../types";
+import { IoIosMore } from "react-icons/io";
 
-const Friend: React.FC<FriendProps> = ({
-  id,
-  username,
-  first_name,
-  last_name,
-  avatar_url,
+interface FriendCardProps {
+  friend: FriendProps;
+  onHandleAction: (key: any, friend: FriendProps) => void;
+}
+
+export const FriendCard: React.FC<FriendCardProps> = ({
+  friend,
+  onHandleAction,
 }) => {
   return (
-    <div className="flex cursor-pointer items-center border-b border-gray-300 py-4 pr-2">
-      <div className="relative mr-4 flex ">
-        <Img
-          width={0}
-          height={0}
-          src={avatar_url ? avatar_url : "/avatar-cute-2.jpeg"}
-          alt="Avatar"
-          className="h-12 w-12 rounded-full"
-        />
-        <div className={`absolute bottom-0 right-0 h-4 w-4 rounded-full`}></div>
-      </div>
-      <div className="flex-1">
-        <h3 className="text-lg font-bold">{username}</h3>
-        {/* <p className="text-gray-500">{lastMessage}</p> */}
-      </div>
-    </div>
+    <Card
+      key={friend.id}
+      shadow="sm"
+      className="w-full rounded-tl-2xl rounded-tr-2xl bg-[#fcfeff]"
+    >
+      <CardBody className="flex flex-col space-y-2">
+        <div className="flex items-center space-x-2">
+          <div className="flex-shrink-0">
+            <Image
+              as={NextImage}
+              className="rounded-full"
+              alt=""
+              width={80}
+              height={80}
+              src="/avatar-cute-2.jpeg"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-white/90">
+              {friend.username}
+            </p>
+            <p className="truncate text-sm text-gray-500 dark:text-white/60">
+              {friend.username}
+            </p>
+          </div>
+
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Button
+                size="sm"
+                variant="light"
+                className="rounded-full shadow-none"
+                isIconOnly
+              >
+                <IoIosMore className="text-xl" />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Dropdown menu"
+              onAction={(key) => onHandleAction(key, friend)}
+            >
+              <DropdownItem key="view-profile">View Profile</DropdownItem>
+              <DropdownItem key="remove-friend">Remove Friend</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+      </CardBody>
+    </Card>
   );
 };
-
-export default Friend;

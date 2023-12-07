@@ -33,7 +33,7 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
   const loadingRef = useRef<HTMLSpanElement | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isMessageLoading, setIsMessageLoading] = useState<boolean>(false);
   const [isOldMessageVisible, setIsOldMessageVisible] =
     useState<boolean>(false);
 
@@ -55,8 +55,6 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
     }
 
     if (currentChat?.id) {
-      setLoading(true);
-
       const { data } = await axiosAuth.get(
         `/conversation/${currentChat?.id}/message`,
         {
@@ -80,8 +78,6 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
 
       // wait for 1 second to simulate loading
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat?.id, messages?.length, noMoreMessages]);
@@ -90,6 +86,8 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       if (currentChat?.id) {
+        setIsMessageLoading(true);
+
         const messageRes = await axiosAuth.get<MessageProps[]>(
           `/conversation/${currentChat?.id}/message`,
           {
@@ -103,6 +101,8 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
         setMessages?.([...messageRes?.data]);
 
         setNoMoreMessages(false);
+
+        setIsMessageLoading(false);
       }
     };
 
@@ -260,11 +260,11 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
         }}
         className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400 [&>*:first-child]:mt-auto"
       >
-        {messages?.length && !noMoreMessages && (
+        {messages?.length && !noMoreMessages ? (
           <span ref={loadingRef} className="flex justify-center">
             <LoadingSpinner />
           </span>
-        )}
+        ) : null}
 
         {messages?.length ? (
           messages?.map((message) => {

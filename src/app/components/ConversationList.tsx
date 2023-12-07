@@ -96,7 +96,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, currentChat?.id, session?.user?.id]);
 
-  console.log({ currentChat });
+  console.log({ conversations, friendList });
 
   return (
     <div
@@ -126,7 +126,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
           return (
             <div
               key={conversation?.id}
-              className={`delay-50 duration flex cursor-pointer items-center gap-2 rounded-md p-2 transition ease-in-out hover:bg-gray-100 ${
+              className={`delay-50 duration flex cursor-pointer items-center gap-2 rounded-md p-2 ease-in-out transition hover:bg-gray-100 ${
                 selectedUser?.id === friend?.id ? "bg-gray-100" : ""
               }`}
               onClick={() => {
@@ -156,8 +156,6 @@ const ConversationList: React.FC<ConversationListProps> = () => {
           );
         })
       ) : (
-        // <p className="text-sm text-gray-500">No messages</p>
-
         <div
           role="status"
           className="max-w-md flex-1 animate-pulse space-y-4 divide-y divide-gray-200 rounded border border-gray-200 p-4 shadow dark:divide-gray-700 dark:border-gray-700 md:p-6"

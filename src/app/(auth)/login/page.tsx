@@ -69,7 +69,6 @@ export default function Login() {
             label="Username"
             disabled={!!isLoading}
             control={control}
-            trigger={trigger}
             errors={errors}
             required={true}
           />
@@ -94,7 +93,7 @@ export default function Login() {
           <div className="mb-4 mt-6 flex items-center justify-center space-x-4">
             <button
               type="submit"
-              className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-8 py-2 uppercase text-gray-100 transition duration-150 hover:bg-blue-700 hover:shadow-xl"
+              className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-8 py-2 uppercase text-gray-100 duration-150 transition hover:bg-blue-700 hover:shadow-xl"
               onClick={handleSubmit(onSubmit)}
             >
               {isLoading ? <LoadingSpinner /> : "Sign In"}
