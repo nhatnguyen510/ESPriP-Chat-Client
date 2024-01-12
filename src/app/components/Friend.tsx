@@ -10,9 +10,11 @@ import {
   DropdownMenu,
   DropdownItem,
   useDisclosure,
+  cn,
 } from "@nextui-org/react";
 import { FriendProps } from "@/../types";
 import { IoIosMore } from "react-icons/io";
+import { IoPersonCircleSharp, IoPersonRemove } from "react-icons/io5";
 
 interface FriendCardProps {
   friend: FriendProps;
@@ -23,6 +25,9 @@ export const FriendCard: React.FC<FriendCardProps> = ({
   friend,
   onHandleAction,
 }) => {
+  const iconClasses =
+    "text-xl text-default-500 pointer-events-none flex-shrink-0";
+
   return (
     <Card
       key={friend.id}
@@ -43,10 +48,10 @@ export const FriendCard: React.FC<FriendCardProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-900 dark:text-white/90">
-              {friend.username}
+              {`${friend.first_name} ${friend.last_name}`}
             </p>
             <p className="truncate text-sm text-gray-500 dark:text-white/60">
-              {friend.username}
+              @{friend.username}
             </p>
           </div>
 
@@ -65,8 +70,20 @@ export const FriendCard: React.FC<FriendCardProps> = ({
               aria-label="Dropdown menu"
               onAction={(key) => onHandleAction(key, friend)}
             >
-              <DropdownItem key="view-profile">View Profile</DropdownItem>
-              <DropdownItem key="remove-friend">Remove Friend</DropdownItem>
+              <DropdownItem
+                key="view-profile"
+                endContent={<IoPersonCircleSharp className={iconClasses} />}
+              >
+                View Profile
+              </DropdownItem>
+              <DropdownItem
+                key="remove-friend"
+                className="text-danger"
+                color="danger"
+                endContent={<IoPersonRemove className={cn(iconClasses, "")} />}
+              >
+                Remove Friend
+              </DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>

@@ -13,3 +13,22 @@ export const useSessionExpiredModalStore = create<SessionExpiredModalStore>(
     close: () => set({ isOpen: false }),
   })
 );
+
+export const useSessionKeysStore = create<{
+  sessionKeys: Record<string, string>;
+  setSessionKeys: (
+    sessionKeys:
+      | Record<string, string>
+      | ((prev: Record<string, string>) => Record<string, string>)
+  ) => void;
+}>((set) => ({
+  sessionKeys: {},
+  setSessionKeys: (sessionKeys) => {
+    set((state) => ({
+      sessionKeys:
+        typeof sessionKeys === "function"
+          ? sessionKeys(state.sessionKeys)
+          : sessionKeys,
+    }));
+  },
+}));

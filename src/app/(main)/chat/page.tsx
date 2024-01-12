@@ -11,14 +11,12 @@ export default async function Chat(props: chatProps) {
 
   return (
     <>
-      <div className="flex h-screen flex-1 flex-col justify-between">
-        <div className="flex h-full">
-          <div className="w-3/12 lg:ml-32">
-            <MessageSection />
-          </div>
-          <div className="relative flex w-9/12 flex-col">
-            <ChatSection />
-          </div>
+      <div className="flex h-screen">
+        <div className="w-1/3 lg:w-3/12">
+          <MessageSection />
+        </div>
+        <div className="relative flex w-2/3 flex-col lg:w-9/12">
+          <ChatSection />
         </div>
       </div>
     </>

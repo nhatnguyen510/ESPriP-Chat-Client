@@ -89,7 +89,7 @@ export const FriendList: React.FC<FriendListProps> = ({ searchedFriends }) => {
         ) : friendList?.length ? (
           friendList.map((friend, i) => (
             <FriendCard
-              key={friend.id}
+              key={friend?.id}
               friend={friend}
               onHandleAction={onHandleAction}
             />

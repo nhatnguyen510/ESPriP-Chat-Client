@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { CurrentUserReturnType } from "@/../lib/session";
 import { useChatContext } from "@/../context/ChatProvider";
 import socket from "@/../lib/socket";
 import { MessageProps, ConversationProps } from "@/../types";
 import { ListenEvent } from "@/../lib/enum";
+import { useSessionKeysStore } from "@/../lib/zustand/store";
+import { decryptMessage, encryptMessage } from "@/../lib/encryption";
+import { toast } from "react-hot-toast";
+import { AxiosError } from "axios";
 
 type chatInputProps = {};
 
@@ -21,81 +25,37 @@ const ChatInput: React.FC<chatInputProps> = () => {
     setConversations,
   } = useChatContext();
 
+  const { sessionKeys } = useSessionKeysStore();
+
+  const currentSessionKey = useMemo(() => {
+    return sessionKeys?.[currentChat?.id as string];
+  }, [currentChat?.id, sessionKeys]);
+
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTextInput(e.target.value);
   };
 
-  // const onSendMessage = async () => {
-  //   console.log({ textInput });
-
-  //   try {
-  //     if (currentChat) {
-  //       const res = await axiosAuth.post<{
-  //         savedMessage: MessageProps;
-  //         updatedConversation: ConversationProps;
-  //       }>(`/conversation/${currentChat.id}/message`, {
-  //         message: textInput,
-  //       });
-  //       const sentMessage = res.data.savedMessage;
-  //       const updatedConversation = res.data.updatedConversation;
-
-  //       console.log({ sentMessage, updatedConversation });
-
-  //       // socket.emit("sendMessage", {
-  //       //   id: sentMessage.id,
-  //       //   conversation_id: sentMessage.conversation_id,
-  //       //   sender_id: user?.id,
-  //       //   receiver_id: selectedUser?.id,
-  //       //   seen: sentMessage.seen,
-  //       //   message: textInput,
-  //       //   lastMessage: updatedConversation.lastMessage,
-  //       //   lastMessageAt: updatedConversation.lastMessageAt,
-  //       // });
-
-  //       setMessages?.((prev) => [...prev, sentMessage]);
-
-  //       setCurrentChat?.((prev) => {
-  //         return {
-  //           ...(prev as any),
-  //           last_message: updatedConversation.last_message,
-  //           last_message_at: updatedConversation.last_message_at,
-  //         };
-  //       });
-
-  //       // Update lastMessage and lastMessageAt in conversations
-  //       setConversations?.((prev) => {
-  //         const index = prev.findIndex(
-  //           (conversation) => conversation.id == updatedConversation.id
-  //         );
-  //         const newConversations = [...prev];
-  //         newConversations[index].last_message_at =
-  //           updatedConversation.last_message_at;
-  //         newConversations[index].last_message =
-  //           updatedConversation.last_message;
-  //         return newConversations;
-  //       });
-
-  //       setTextInput("");
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
-
   const onSendMessage = async () => {
+    const encryptedMessage = encryptMessage(
+      textInput,
+      Buffer.from(currentSessionKey as string, "hex")
+    );
+
     try {
       if (currentChat) {
         const result = await axiosAuth.post(
           `/conversation/${currentChat.id}/message`,
           {
-            message: textInput,
+            message: JSON.stringify(encryptedMessage),
           }
         );
 
         setTextInput("");
       }
     } catch (err) {
-      console.log(err);
+      if (err instanceof AxiosError) {
+        toast.error(err.response?.data?.message);
+      }
     }
   };
 
@@ -109,18 +69,32 @@ const ChatInput: React.FC<chatInputProps> = () => {
         const sentMessage = data.message;
         const updatedConversation = data.updatedConversation;
 
+        // decrypt message
+        const decryptedMessage = {
+          ...sentMessage,
+          message: decryptMessage(
+            JSON.parse(sentMessage.message),
+            Buffer.from(sessionKeys[updatedConversation.id], "hex")
+          ),
+        };
+
+        const decryptedUpdatedConversation: ConversationProps = {
+          ...updatedConversation,
+          last_message: decryptedMessage,
+        };
+
         if (currentChat?.id == updatedConversation.id) {
-          setMessages?.((prev) => [...prev, sentMessage]);
-          setCurrentChat?.(updatedConversation);
+          setMessages?.((prev) => [...prev, decryptedMessage]);
+          setCurrentChat?.(decryptedUpdatedConversation);
         }
 
         // Update lastMessage and lastMessageAt in conversations
         setConversations?.((prev) => {
           const index = prev.findIndex(
-            (conversation) => conversation.id == updatedConversation.id
+            (conversation) => conversation.id == decryptedUpdatedConversation.id
           );
           const newConversations = [...prev];
-          newConversations[index] = updatedConversation;
+          newConversations[index] = decryptedUpdatedConversation;
 
           return newConversations;
         });
@@ -133,6 +107,8 @@ const ChatInput: React.FC<chatInputProps> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChat?.id]);
 
+  console.log("currentSessionKey: ", currentSessionKey);
+
   return (
     <>
       <div className="mb-2 h-16 border-t-2 border-gray-200 p-2">
@@ -140,7 +116,7 @@ const ChatInput: React.FC<chatInputProps> = () => {
           <span className="flex items-center">
             <button
               type="button"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -175,7 +151,7 @@ const ChatInput: React.FC<chatInputProps> = () => {
           <div className="flex items-center">
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +170,7 @@ const ChatInput: React.FC<chatInputProps> = () => {
             </button>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -219,7 +195,7 @@ const ChatInput: React.FC<chatInputProps> = () => {
             </button>
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition duration-500 ease-in-out hover:bg-gray-300 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 duration-500 ease-in-out transition hover:bg-gray-300 focus:outline-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -239,7 +215,7 @@ const ChatInput: React.FC<chatInputProps> = () => {
             <button
               type="button"
               onClick={onSendMessage}
-              className="inline-flex items-center justify-center rounded-lg bg-blue-500 px-4 py-3 text-white transition duration-500 ease-in-out hover:bg-blue-400 focus:outline-none"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-500 px-4 py-3 text-white duration-500 ease-in-out transition hover:bg-blue-400 focus:outline-none"
             >
               <span className="font-bold">Send</span>
               <svg

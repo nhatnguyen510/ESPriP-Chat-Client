@@ -8,8 +8,8 @@ import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import schema, { FormData } from "@/../lib/validation/registerSchema";
-import { toast } from "react-toastify";
+import { schema, FormData } from "@/../lib/validation/registerSchema";
+import { toast } from "react-hot-toast";
 import useRefinement, {
   RefinementCallback,
 } from "@/../lib/hooks/useRefinement";
@@ -80,13 +80,12 @@ export default function Register() {
       const response = await toast.promise(
         register(data),
         {
-          pending: "Registering...",
+          loading: "Registering...",
           success: "Registered successfully 🎉",
           error: "Something went wrong 😢",
         },
         {
           position: "top-center",
-          hideProgressBar: true,
         }
       );
 

@@ -5,10 +5,13 @@ import { BsPencilSquare, BsSearch } from "react-icons/bs";
 import Avatar from "@/app/components/Avatar";
 import { FriendProps } from "@/../types";
 import ConversationList from "./ConversationList";
+import { useSessionKeysStore } from "@/../lib/zustand/store";
 
 interface MessageSectionProps {}
 
 const MessageSection: React.FC<MessageSectionProps> = () => {
+  const { sessionKeys } = useSessionKeysStore();
+
   const fakeOnlineFriends = [
     "60f9a1a0b3b3a1b4a8a0b3b3",
     "60f9a1a0b3b3a1b4a8a0b3b4",
@@ -54,6 +57,8 @@ const MessageSection: React.FC<MessageSectionProps> = () => {
       last_name: "test5",
     },
   ];
+
+  console.log("sessionKeys: ", sessionKeys);
 
   return (
     <>

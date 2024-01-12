@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { signOut } from "next-auth/react";
+import { useChatContext } from "@/../context/ChatProvider";
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
 }) => {
   const router = useRouter();
   const axiosAuth = useAxiosAuth();
+  const { sentFriendRequests } = useChatContext();
 
   const logout = useCallback(async () => {
     const res = await axiosAuth.post(`auth/logout`);
@@ -32,8 +34,14 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
       redirect: false,
       callbackUrl: "/login",
     });
+
+    if (!sentFriendRequests?.length) {
+      localStorage.removeItem("privateKey");
+      localStorage.removeItem("publicKey");
+    }
+
     router.push(logoutResponse?.url as string);
-  }, [axiosAuth, router]);
+  }, [axiosAuth, router, sentFriendRequests]);
 
   return (
     <>

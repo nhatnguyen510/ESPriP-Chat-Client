@@ -6,6 +6,7 @@ export type FriendProps = {
   first_name: string;
   last_name: string;
   avatar_url?: string;
+  friend_public_key?: string;
 };
 
 export type CurrentChatProps = ConversationProps;
@@ -40,6 +41,16 @@ export type FriendRequestProps = {
   accepted_user: FriendProps;
   requested_user_public_key: string;
   accepted_user_public_key: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type SessionKey = {
+  id: string;
+  user_id: string;
+  conversation_id: string;
+  encrypted_key: string;
+  iv: string;
   created_at?: string;
   updated_at?: string;
 };

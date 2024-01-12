@@ -6,22 +6,31 @@ import {
   ConversationProps,
   MessageProps,
   FriendRequestProps,
+  SessionKey,
 } from "../types";
-import { getCsrfToken, getSession, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import socket from "../lib/socket";
-import { createDiffieHellman, DiffieHellman } from "crypto";
-import { refresh } from "../lib/api/auth";
-import { useSessionExpiredModalStore } from "../lib/zustand/store";
+import { createDiffieHellman, DiffieHellman, randomBytes } from "crypto";
+import {
+  useSessionExpiredModalStore,
+  useSessionKeysStore,
+} from "../lib/zustand/store";
 import useRefreshToken from "../lib/hooks/useRefreshToken";
 import useAxiosAuth from "../lib/hooks/useAxiosAuth";
 import { ListenEvent, Status } from "../lib/enum";
+import toast from "react-hot-toast";
+import {
+  decryptSessionKey,
+  deriveSessionKey,
+  encryptSessionKey,
+} from "../lib/encryption";
 
 type ChatContextType = {
   currentChat: ConversationProps | null;
   setCurrentChat: React.Dispatch<
     React.SetStateAction<ConversationProps | null>
   >;
-  selectedUser: FriendProps | null | undefined;
+  selectedUser: FriendProps | null;
   setSelectedUser: React.Dispatch<React.SetStateAction<FriendProps | null>>;
   messages: MessageProps[];
   setMessages: React.Dispatch<React.SetStateAction<MessageProps[]>>;
@@ -37,6 +46,9 @@ type ChatContextType = {
   setOnlineFriends: React.Dispatch<React.SetStateAction<string[]>>;
   conversations: ConversationProps[] | null;
   setConversations: React.Dispatch<React.SetStateAction<ConversationProps[]>>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  keys: React.MutableRefObject<DiffieHellman | null>;
 };
 
 export const ChatContext = React.createContext<Partial<ChatContextType>>({});
@@ -56,23 +68,30 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [sentFriendRequests, setSentFriendRequests] = useState<FriendProps[]>(
     []
   );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const keys = useRef<DiffieHellman | null>(null);
   const { data: session, status, update } = useSession();
   const axiosAuth = useAxiosAuth();
   const refreshToken = useRefreshToken(session?.user);
   const { open } = useSessionExpiredModalStore();
+  const { sessionKeys, setSessionKeys } = useSessionKeysStore();
 
   useEffect(() => {
     // get all friends, conversations, sent friend requests, and friend requests list
     const fetchAll = async () => {
+      setIsLoading?.(true);
+
       const friendsData = axiosAuth.get<FriendProps[]>(`/friends`);
       const conversationsData =
         axiosAuth.get<ConversationProps[]>(`/conversation`);
       const sentFriendRequestsData = axiosAuth.get<FriendProps[]>(
         `/friends/requests/sent`
       );
-      const friendRequestsListData = await axiosAuth.get<FriendRequestProps[]>(
-        `/friends/requests`
+      const friendRequestsListData =
+        axiosAuth.get<FriendRequestProps[]>(`/friends/requests`);
+
+      const sessionKeysData = axiosAuth.get<SessionKey[]>(
+        "/encryption/session-keys"
       );
 
       const [
@@ -80,22 +99,78 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         conversationsRes,
         sentFriendRequestRes,
         friendRequestsRes,
+        sessionKeysRes,
       ] = await Promise.all([
         friendsData,
         conversationsData,
         sentFriendRequestsData,
         friendRequestsListData,
+        sessionKeysData,
       ]);
 
+      const sessionKeys = sessionKeysRes?.data?.reduce((acc, curr) => {
+        const decryptedKey = decryptSessionKey(
+          { iv: curr.iv, encryptedData: curr.encrypted_key },
+          Buffer.from(session?.user?.master_key as string, "hex")
+        );
+        return {
+          ...acc,
+          [curr.conversation_id]: decryptedKey,
+        };
+      }, {});
+
+      setSessionKeys?.(sessionKeys);
       setConversations?.(conversationsRes?.data);
       setFriendList?.(friendsRes?.data);
       setSentFriendRequests?.(sentFriendRequestRes?.data);
       setFriendRequestsList?.(friendRequestsRes?.data);
+
+      setIsLoading?.(false);
     };
 
     status == "authenticated" && fetchAll();
-  }, [axiosAuth, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [axiosAuth, session?.user?.master_key, status]);
 
+  useEffect(() => {
+    // check if there exists a session key for each conversation
+    // if not, create one and save it to the database
+    conversations?.forEach(async (conversation) => {
+      if (!sessionKeys?.[conversation.id]) {
+        const friend = friendList?.find((friend) =>
+          conversation.participants_ids.includes(friend.id)
+        );
+
+        const sessionKey = deriveSessionKey(
+          keys?.current as DiffieHellman,
+          friend?.friend_public_key as string
+        );
+
+        const encryptedSessionKey = encryptSessionKey(
+          sessionKey,
+          Buffer.from(session?.user?.master_key as string, "hex")
+        );
+
+        const { data: encryptionData } = await axiosAuth.post<SessionKey>(
+          "/encryption/session-key",
+          {
+            encrypted_key: encryptedSessionKey.encryptedData,
+            conversation_id: conversation.id,
+            iv: encryptedSessionKey.iv,
+          }
+        );
+
+        setSessionKeys?.((prev) => ({
+          ...(prev as any),
+          [conversation.id]: sessionKey,
+        }));
+      }
+    });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // connect socket
   useEffect(() => {
     function connectSocket() {
       socket.auth = { token: session?.user.access_token };
@@ -121,44 +196,105 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           open();
         }
       });
+
+      socket.once(
+        "prime_and_generator",
+        (data: { prime: string; generator: string }) => {
+          console.log("Prime and Generator: ", {
+            prime: data.prime,
+            generator: data.generator,
+          });
+
+          keys.current = createDiffieHellman(
+            data.prime,
+            "hex",
+            data.generator as any
+          );
+
+          const existedPublicKey = localStorage.getItem("publicKey");
+          const existedPrivateKey = localStorage.getItem("privateKey");
+
+          console.log({ existedPublicKey, existedPrivateKey });
+          if (!existedPublicKey || !existedPrivateKey) {
+            keys.current.generateKeys();
+
+            //save keys in local storage
+            localStorage.setItem(
+              "privateKey",
+              keys.current.getPrivateKey("hex")
+            );
+            localStorage.setItem("publicKey", keys.current.getPublicKey("hex"));
+          } else {
+            keys.current.setPrivateKey(Buffer.from(existedPrivateKey, "hex"));
+            keys.current.setPublicKey(Buffer.from(existedPublicKey, "hex"));
+          }
+        }
+      );
+
+      socket.on(
+        ListenEvent.FriendRequestAccepted,
+        async (data: {
+          conversation: ConversationProps;
+          friendRequest: FriendRequestProps;
+        }) => {
+          console.log("friend request accepted", data);
+          toast.success(
+            `${data.friendRequest.accepted_user.username} accepted your friend request`
+          );
+
+          setSentFriendRequests?.((prev) =>
+            prev?.filter(
+              (friend) => friend.id !== data.friendRequest.accepted_user.id
+            )
+          );
+
+          setFriendList?.((prev) => [
+            ...prev,
+            {
+              ...data.friendRequest.accepted_user,
+              friend_public_key: data.friendRequest.accepted_user_public_key,
+            },
+          ]);
+
+          setConversations?.((prev) => [...prev, data.conversation]);
+
+          const sessionKey = deriveSessionKey(
+            keys?.current as DiffieHellman,
+            data.friendRequest.accepted_user_public_key
+          );
+
+          const encryptedSessionKey = encryptSessionKey(
+            sessionKey,
+            Buffer.from(session?.user?.master_key as string, "hex")
+          );
+
+          const { data: encryptionData } = await axiosAuth.post<SessionKey>(
+            "/encryption/session-key",
+            {
+              encrypted_key: encryptedSessionKey.encryptedData,
+              conversation_id: data.conversation.id,
+              iv: encryptedSessionKey.iv,
+            }
+          );
+
+          console.log("sessionKey on listen event: ", sessionKey);
+
+          setSessionKeys?.((prev) => ({
+            ...(prev as any),
+            [data.conversation.id]: sessionKey,
+          }));
+        }
+      );
     }
 
     if (status === "authenticated") {
       connectSocket();
     }
 
-    // socket.on("primeAndGenerator", (data) => {
-    //   console.log("Prime and Generator: ", data);
-
-    //   if (
-    //     !localStorage.getItem("publicKey") ||
-    //     !localStorage.getItem("privateKey")
-    //   ) {
-    //     const newKeys = createDiffieHellman(data.prime, data.generator);
-    //     newKeys.generateKeys();
-
-    //     //save keys in local storage
-    //     localStorage.setItem("privateKey", newKeys.getPrivateKey("hex"));
-    //     localStorage.setItem("publicKey", newKeys.getPublicKey("hex"));
-    //   } else {
-    //     keys.current = createDiffieHellman(data.prime, data.generator);
-    //     keys.current.setPrivateKey(
-    //       Buffer.from(localStorage.getItem("privateKey") as string, "hex")
-    //     );
-    //     keys.current.setPublicKey(
-    //       Buffer.from(localStorage.getItem("publicKey") as string, "hex")
-    //     );
-
-    //     console.log(
-    //       "Keys: ",
-    //       keys.current.getPrivateKey("hex"),
-    //       keys.current.getPublicKey("hex")
-    //     );
-    //   }
-    // });
-
     return () => {
       socket.off("connect_error");
+      socket.off("prime_and_generator");
+      socket.off(ListenEvent.FriendRequestAccepted);
       socket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,6 +353,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setOnlineFriends,
         conversations,
         setConversations,
+        isLoading,
+        setIsLoading,
+        keys,
       }}
     >
       {children}

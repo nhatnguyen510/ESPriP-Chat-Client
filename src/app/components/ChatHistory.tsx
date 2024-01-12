@@ -13,6 +13,8 @@ import { BsArrowDownCircle } from "react-icons/bs";
 import { useMessages } from "@/../lib/hooks/useMessages";
 import { EmitEvent, ListenEvent } from "@/../lib/enum";
 import { useSession } from "next-auth/react";
+import { useSessionKeysStore } from "@/../lib/zustand/store";
+import { decryptMessage } from "@/../lib/encryption";
 
 type chatHistoryProps = {};
 
@@ -26,6 +28,7 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
     setConversations,
     selectedUser,
   } = useChatContext();
+  const { sessionKeys } = useSessionKeysStore();
   const axiosAuth = useAxiosAuth();
   const { data: session } = useSession();
   const user = session?.user;
@@ -55,7 +58,7 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
     }
 
     if (currentChat?.id) {
-      const { data } = await axiosAuth.get(
+      const { data } = await axiosAuth.get<MessageProps[]>(
         `/conversation/${currentChat?.id}/message`,
         {
           params: {
@@ -70,7 +73,19 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
         return;
       }
 
-      setMessages?.((prev) => [...data, ...prev]);
+      // decrypt messages
+
+      const decryptedMessages = data?.map((message) => {
+        return {
+          ...message,
+          message: decryptMessage(
+            JSON.parse(message.message),
+            Buffer.from(sessionKeys[currentChat.id], "hex")
+          ),
+        };
+      });
+
+      setMessages?.((prev) => [...decryptedMessages, ...prev]);
 
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop += 50; // Adjust the scroll position as needed
@@ -98,7 +113,18 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
           }
         );
 
-        setMessages?.([...messageRes?.data]);
+        // decrypt messages
+        const decryptedMessages = messageRes?.data?.map((message) => {
+          return {
+            ...message,
+            message: decryptMessage(
+              JSON.parse(message.message),
+              Buffer.from(sessionKeys[currentChat.id], "hex")
+            ),
+          };
+        });
+
+        setMessages?.(decryptedMessages);
 
         setNoMoreMessages(false);
 
@@ -185,19 +211,34 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
       console.log("Receiving message: ", data);
       const message = data.message;
       const updatedConversation = data.updatedConversation;
+
+      // decrypt message
+      const decryptedMessage = {
+        ...message,
+        message: decryptMessage(
+          JSON.parse(message.message),
+          Buffer.from(sessionKeys[updatedConversation.id], "hex")
+        ),
+      };
+
+      const decryptedUpdatedConversation: ConversationProps = {
+        ...updatedConversation,
+        last_message: decryptedMessage,
+      };
+
       if (currentChat?.id === updatedConversation.id) {
         console.log("Adding message to state");
-        setMessages?.((prev) => [...prev, message]);
-        setCurrentChat?.(updatedConversation);
+        setMessages?.((prev) => [...prev, decryptedMessage]);
+        setCurrentChat?.(decryptedUpdatedConversation);
       }
 
       // update conversation last message
       setConversations?.((prev) => {
         const index = prev.findIndex(
-          (conversation) => conversation.id == updatedConversation.id
+          (conversation) => conversation.id == decryptedUpdatedConversation.id
         );
         const newConversations = [...prev];
-        newConversations[index] = updatedConversation;
+        newConversations[index] = decryptedUpdatedConversation;
 
         return newConversations;
       });

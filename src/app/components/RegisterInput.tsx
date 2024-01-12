@@ -11,6 +11,7 @@ type inputProps = {
   required?: boolean;
   errors: any;
   control: any;
+  defaultValue?: any;
   onChange?: () => void;
   handleDisplayPassword?: () => void;
   handleDisplayConfirmedPassword?: () => void;
@@ -24,6 +25,7 @@ const Input: React.FC<inputProps> = ({
   required,
   errors,
   control,
+  defaultValue = "",
   onChange,
   handleDisplayPassword,
   handleDisplayConfirmedPassword,
@@ -44,7 +46,6 @@ const Input: React.FC<inputProps> = ({
         <Controller
           name={id}
           control={control}
-          defaultValue=""
           render={({ field }) => (
             <input
               {...field}

@@ -7,6 +7,7 @@ export enum ListenEvent {
   MessageSent = "message_sent",
   ReceiveMessage = "receive_message",
   MessageSeen = "message_seen",
+  FriendRequestAccepted = "friend_request_accepted",
 }
 
 export enum EmitEvent {

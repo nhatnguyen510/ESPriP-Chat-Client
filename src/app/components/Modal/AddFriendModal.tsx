@@ -26,9 +26,10 @@ import { IoPersonAdd, IoCheckmarkCircleOutline } from "react-icons/io5";
 import { HiSearch } from "react-icons/hi";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { debounce } from "lodash";
-import { useChatContext } from "../../../../context/ChatProvider";
+import { useChatContext } from "@/../context/ChatProvider";
 import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
+import { FriendRequestProps } from "@/../types";
 
 interface AddFriendModalProps {
   isOpen: boolean;
@@ -49,15 +50,13 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
   onClose,
 }) => {
   const axiosAuth = useAxiosAuth();
-  const { sentFriendRequests, setSentFriendRequests } = useChatContext();
+  const { sentFriendRequests, setSentFriendRequests, keys } = useChatContext();
   const [searchInput, setSearchInput] = useState<string>("");
   const [searchResults, setSearchResults] = useState<searchResultProps[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [sendingRequests, setSendingRequests] = useState<
     Record<string, boolean>
   >({});
-
-  console.log("sentFriendRequests", sentFriendRequests);
 
   const isSentRequest = (userId: string) => {
     return sentFriendRequests?.some((friend) => friend.id === userId);
@@ -70,10 +69,13 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
 
     try {
       setSendingRequests((prev) => ({ ...prev, [userId]: true }));
-      const { data } = await axiosAuth.post(`/friends/requests/send`, {
-        accepted_user_id: userId,
-        requested_user_public_key: "thisismypublickey",
-      });
+      const { data } = await axiosAuth.post<FriendRequestProps>(
+        `/friends/requests/send`,
+        {
+          accepted_user_id: userId,
+          requested_user_public_key: keys?.current?.getPublicKey("hex"),
+        }
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setSendingRequests((prev) => ({ ...prev, [userId]: false }));

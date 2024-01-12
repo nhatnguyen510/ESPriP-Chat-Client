@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChatProvider } from "@/../context/ChatProvider";
+import { ChatProvider, useChatContext } from "@/../context/ChatProvider";
 import { useSessionExpiredModalStore } from "@/../lib/zustand/store";
 import { SessionExpiredModal } from "../components/Modal/SessionExpiredModal";
 import DesktopSidebar from "../components/SideBar";
@@ -14,25 +14,30 @@ const metadata = {
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const { isOpen, close } = useSessionExpiredModalStore();
+  const { sentFriendRequests } = useChatContext();
   const router = useRouter();
+
+  const handleModalClose = async () => {
+    const signOutResponse = await signOut({
+      redirect: false,
+      callbackUrl: "/login",
+    });
+
+    if (!sentFriendRequests?.length) {
+      localStorage.removeItem("privateKey");
+      localStorage.removeItem("publicKey");
+    }
+
+    router.push(signOutResponse?.url);
+    close();
+  };
 
   return (
     <div className="flex min-h-screen w-full">
       <ChatProvider>
-        <SessionExpiredModal
-          isOpen={isOpen}
-          handleClose={async () => {
-            const signOutResponse = await signOut({
-              redirect: false,
-              callbackUrl: "/login",
-            });
-
-            router.push(signOutResponse?.url);
-            close();
-          }}
-        />
+        <SessionExpiredModal isOpen={isOpen} handleClose={handleModalClose} />
         <DesktopSidebar />
-        {children}
+        <div className="h-screen flex-1 lg:ml-32">{children}</div>
       </ChatProvider>
     </div>
   );
