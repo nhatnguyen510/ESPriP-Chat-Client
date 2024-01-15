@@ -180,7 +180,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
               <Avatar image={friend?.avatar_url} isOnline={isOnline} />
               <div className="flex h-full w-full flex-col justify-between">
                 <div className="flex flex-1 items-center justify-between">
-                  <p className="text-sm font-semibold">{friend?.username}</p>
+                  <p className="text-sm font-semibold">{`${friend?.first_name} ${friend?.last_name}`}</p>
                   <p className="text-xs text-gray-500">{formattedTime}</p>
                 </div>
                 <p

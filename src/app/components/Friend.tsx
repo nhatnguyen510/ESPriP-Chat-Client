@@ -43,7 +43,7 @@ export const FriendCard: React.FC<FriendCardProps> = ({
               alt=""
               width={80}
               height={80}
-              src="/avatar-cute-2.jpeg"
+              src={friend.avatar_url || "/avatar-cute-2.jpeg"}
             />
           </div>
           <div className="min-w-0 flex-1">

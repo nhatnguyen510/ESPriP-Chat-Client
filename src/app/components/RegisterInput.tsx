@@ -22,7 +22,7 @@ const Input: React.FC<inputProps> = ({
   label,
   type = "text",
   disabled,
-  required,
+  required = false,
   errors,
   control,
   defaultValue = "",
@@ -60,6 +60,8 @@ const Input: React.FC<inputProps> = ({
                   setIsLoading(false);
                 }
               }}
+              defaultValue={defaultValue}
+              required={required}
               className={`
                 w-full rounded border p-2 ${
                   id.includes("password") ? "flex-1 pr-10" : ""

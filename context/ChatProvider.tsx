@@ -20,6 +20,7 @@ import useAxiosAuth from "../lib/hooks/useAxiosAuth";
 import { ListenEvent, Status } from "../lib/enum";
 import toast from "react-hot-toast";
 import {
+  decryptMessage,
   decryptSessionKey,
   deriveSessionKey,
   encryptSessionKey,
@@ -108,19 +109,53 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         sessionKeysData,
       ]);
 
-      const sessionKeys = sessionKeysRes?.data?.reduce((acc, curr) => {
-        const decryptedKey = decryptSessionKey(
-          { iv: curr.iv, encryptedData: curr.encrypted_key },
-          Buffer.from(session?.user?.master_key as string, "hex")
-        );
-        return {
-          ...acc,
-          [curr.conversation_id]: decryptedKey,
-        };
-      }, {});
+      const sessionKeys: Record<string, string> = sessionKeysRes?.data?.reduce(
+        (acc, curr) => {
+          const decryptedKey = decryptSessionKey(
+            { iv: curr.iv, encryptedData: curr.encrypted_key },
+            Buffer.from(session?.user?.master_key as string, "hex")
+          );
+          return {
+            ...acc,
+            [curr.conversation_id]: decryptedKey,
+          };
+        },
+        {}
+      );
+
+      const decryptedConversations = conversationsRes?.data?.map(
+        (conversation) => {
+          console.log("conversation: ", conversation);
+          const encryptedLastMessage = conversation?.last_message?.message;
+
+          console.log("encryptedLastMessage: ", encryptedLastMessage);
+
+          if (!encryptedLastMessage) return conversation;
+
+          const { iv, encryptedData } = JSON.parse(
+            encryptedLastMessage as string
+          );
+
+          const decryptedLastMessage = decryptMessage(
+            {
+              iv,
+              encryptedData,
+            },
+            Buffer.from(sessionKeys?.[conversation.id] as string, "hex")
+          );
+
+          return {
+            ...conversation,
+            last_message: {
+              ...(conversation.last_message as MessageProps),
+              message: decryptedLastMessage,
+            },
+          };
+        }
+      );
 
       setSessionKeys?.(sessionKeys);
-      setConversations?.(conversationsRes?.data);
+      setConversations?.(decryptedConversations);
       setFriendList?.(friendsRes?.data);
       setSentFriendRequests?.(sentFriendRequestRes?.data);
       setFriendRequestsList?.(friendRequestsRes?.data);
@@ -304,7 +339,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const onUserOnline = (data: { userId: string; status: string }) => {
       if (
         data.status == Status.Online &&
-        !onlineFriends?.includes(data.userId)
+        !onlineFriends?.includes(data.userId) &&
+        data.userId !== session?.user?.id
       ) {
         setOnlineFriends?.((prev) => [...prev, data.userId]);
       }

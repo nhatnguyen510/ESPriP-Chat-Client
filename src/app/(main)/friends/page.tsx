@@ -40,6 +40,7 @@ export default function Friends() {
 
   const numberOfOnlineFriends = useMemo(() => {
     if (onlineFriends) {
+      console.log("onlineFriends", onlineFriends);
       return onlineFriends.length;
     }
   }, [onlineFriends]);

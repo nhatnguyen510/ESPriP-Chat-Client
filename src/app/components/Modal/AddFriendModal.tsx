@@ -22,7 +22,11 @@ import {
 } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import NextImage from "next/image";
-import { IoPersonAdd, IoCheckmarkCircleOutline } from "react-icons/io5";
+import {
+  IoPersonAdd,
+  IoCheckmarkCircleOutline,
+  IoPerson,
+} from "react-icons/io5";
 import { HiSearch } from "react-icons/hi";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { debounce } from "lodash";
@@ -30,19 +34,20 @@ import { useChatContext } from "@/../context/ChatProvider";
 import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import { FriendRequestProps } from "@/../types";
+import { useSession } from "next-auth/react";
 
 interface AddFriendModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface searchResultProps {
+interface SearchResultProps {
   id: string;
   username: string;
   first_name: string;
   last_name: string;
   email: string;
-  avatar?: string;
+  avatar_url?: string;
 }
 
 export const AddFriendModal: React.FC<AddFriendModalProps> = ({
@@ -50,9 +55,11 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
   onClose,
 }) => {
   const axiosAuth = useAxiosAuth();
-  const { sentFriendRequests, setSentFriendRequests, keys } = useChatContext();
+  const { data: session } = useSession();
+  const { friendList, sentFriendRequests, setSentFriendRequests, keys } =
+    useChatContext();
   const [searchInput, setSearchInput] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<searchResultProps[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResultProps[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [sendingRequests, setSendingRequests] = useState<
     Record<string, boolean>
@@ -60,6 +67,10 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
 
   const isSentRequest = (userId: string) => {
     return sentFriendRequests?.some((friend) => friend.id === userId);
+  };
+
+  const isFriend = (userId: string) => {
+    return friendList?.some((friend) => friend.id === userId);
   };
 
   const sendFriendRequest = async (userId: string) => {
@@ -98,7 +109,9 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
     const fetchUsers = async () => {
       setIsSearching(true);
 
-      const { data } = await axiosAuth.get(`/user/search?query=${searchInput}`);
+      const { data } = await axiosAuth.get<SearchResultProps[]>(
+        `/user/search?query=${searchInput}`
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -162,31 +175,39 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                               description={user.username}
                               className="transition-transform"
                               avatarProps={{
-                                src: user.avatar || "/avatar-cute-2.jpeg",
+                                src: user.avatar_url || "/avatar-cute-2.jpeg",
                               }}
                             />
                           </PopoverTrigger>
-                          <Button
-                            isLoading={sendingRequests[user.id]}
-                            color={
-                              isSentRequest(user.id) ? "default" : "primary"
-                            }
-                            size="sm"
-                            endContent={
-                              isSentRequest(user.id) ? (
-                                <IoCheckmarkCircleOutline className="text-xl" />
-                              ) : !sendingRequests[user.id] ? (
-                                <IoPersonAdd className="text-xl text-white/90" />
-                              ) : null
-                            }
-                            onPress={() => sendFriendRequest(user.id)}
-                          >
-                            {isSentRequest(user.id)
-                              ? "Request Sent"
-                              : sendingRequests[user.id]
-                              ? "Sending..."
-                              : "Add Friend"}
-                          </Button>
+                          {user.id == session?.user.id ? null : (
+                            <Button
+                              isLoading={sendingRequests[user.id]}
+                              color={
+                                isSentRequest(user.id) ? "default" : "primary"
+                              }
+                              size="sm"
+                              endContent={
+                                isSentRequest(user.id) ? (
+                                  <IoCheckmarkCircleOutline className="text-xl" />
+                                ) : sendingRequests[user.id] ? null : isFriend(
+                                    user.id
+                                  ) ? (
+                                  <IoPerson className="text-xl" />
+                                ) : (
+                                  <IoPersonAdd className="text-xl text-white/90" />
+                                )
+                              }
+                              onPress={() => sendFriendRequest(user.id)}
+                            >
+                              {isSentRequest(user.id)
+                                ? "Request Sent"
+                                : sendingRequests[user.id]
+                                ? "Sending..."
+                                : isFriend(user.id)
+                                ? "Friends"
+                                : "Add Friend"}
+                            </Button>
+                          )}
                         </div>
 
                         <PopoverContent className="p-1">
@@ -200,7 +221,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                                   isBordered
                                   radius="full"
                                   size="md"
-                                  src={user.avatar || "/avatar-cute-2.jpeg"}
+                                  src={user.avatar_url || "/avatar-cute-2.jpeg"}
                                 />
                                 <div className="flex flex-col items-start justify-center">
                                   <h4 className="text-small font-semibold leading-none text-default-600">

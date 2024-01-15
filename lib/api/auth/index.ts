@@ -81,7 +81,12 @@ export const logout = async (accessToken: string) => {
   }
 };
 
-export const verifyUsername = async (value: string) => {
+export const verifyUsername = async (value: string, currentUsername: string = "") => {
+
+  if (value === currentUsername) {
+    return true;
+  }
+
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/verify/username`,
     {
@@ -104,7 +109,12 @@ export const verifyUsername = async (value: string) => {
   }
 };
 
-export const verifyEmail = async (value: string) => {
+export const verifyEmail = async (value: string, currentEmail: string = "") => {
+
+  if (value === currentEmail) {
+    return true;
+  }
+
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/verify/email`,
     {

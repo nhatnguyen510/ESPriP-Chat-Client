@@ -20,6 +20,8 @@ interface User {
   username: string;
   first_name: string;
   last_name: string;
+  email: string;
+  avatar_url: string;
   is_verified: boolean;
   access_token: string;
   refresh_token: string;

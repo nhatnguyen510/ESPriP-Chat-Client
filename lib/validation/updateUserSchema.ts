@@ -1,4 +1,5 @@
 import { z } from "zod";
+import _ from "lodash";
 
 const MAX_FILE_SIZE = 1000000;
 const ACCEPTED_IMAGE_TYPES = [
@@ -13,25 +14,35 @@ export const schema = z.object({
     .string()
     .min(4, { message: "Must be greater than 4 letters" })
     .max(20, { message: "Must be smaller than 20 letters" }),
+
   first_name: z
     .string()
     .min(4, { message: "Must be greater than 4 letters" })
     .max(20, { message: "Must be smaller than 20 letters" }),
+
   last_name: z
     .string()
     .min(4, { message: "Must be greater than 4 letters" })
     .max(20, { message: "Must be smaller than 20 letters" }),
   email: z.string().email({ message: "Invalid email" }),
-  avatar: z
+  avatar_url: z
     .any()
-    .refine((files) => files?.length == 1, "Image is required.")
+    .optional()
     .refine(
-      (files) => files?.[0]?.size <= MAX_FILE_SIZE,
-      `Max file size is 1MB.`
-    )
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, .png and .webp formats are supported."
+      (files) => {
+        console.log("files: ", files);
+        return (
+          _.isEmpty(files) ||
+          files.length === 0 ||
+          (files.length === 1 &&
+            files[0].size <= MAX_FILE_SIZE &&
+            ACCEPTED_IMAGE_TYPES.includes(files[0].type))
+        );
+      },
+      {
+        message:
+          "If provided, avatar must be a valid file with max size 1MB and one of the supported types: image/jpeg, image/jpg, image/png, image/webp.",
+      }
     ),
 });
 

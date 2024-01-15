@@ -66,7 +66,7 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = () => {
             <DropdownTrigger>
               <Avatar
                 isBordered
-                src="https://i.pravatar.cc/150?u=a042581f4e29026024d"
+                src={user?.avatar_url as string}
                 className="cursor-pointer"
               />
             </DropdownTrigger>
