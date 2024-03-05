@@ -3,17 +3,20 @@
 import * as React from "react";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import Input from "@/app/components/RegisterInput";
+import Input from "@/app/components/Input";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FormData } from "@/../lib/validation/registerSchema";
 import { signIn } from "next-auth/react";
+
+type LoginDataType = {
+  username: string;
+  password: string;
+};
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState<Boolean>(false);
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState<Boolean>(false);
 
   const {
     control,
@@ -22,7 +25,7 @@ export default function Login() {
     setError,
     formState: { errors },
     trigger,
-  } = useForm<FormData>({
+  } = useForm<LoginDataType>({
     defaultValues: {
       username: "",
       password: "",
@@ -30,7 +33,7 @@ export default function Login() {
     criteriaMode: "all",
   });
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit: SubmitHandler<LoginDataType> = async (data) => {
     setIsLoading(true);
 
     const res = await signIn("credentials", {
@@ -50,10 +53,6 @@ export default function Login() {
     }
 
     setIsLoading(false);
-  };
-
-  const handleDisplayPassword = () => {
-    setShowPassword(!showPassword);
   };
 
   return (
@@ -76,12 +75,10 @@ export default function Login() {
           <Input
             id="password"
             label="Password"
-            type={`${showPassword ? "text" : "password"}`}
             disabled={!!isLoading}
             control={control}
             errors={errors}
             required={true}
-            handleDisplayPassword={handleDisplayPassword}
           />
 
           {errors.root?.serverError && (

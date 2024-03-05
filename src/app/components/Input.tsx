@@ -1,4 +1,7 @@
-import { FieldErrors, FieldValues, UseFormRegister } from "react-hook-form";
+import { VscEye, VscEyeClosed } from "react-icons/vsc";
+import LoadingSpinner from "./LoadingSpinner";
+import { useState } from "react";
+import { Controller } from "react-hook-form";
 
 type inputProps = {
   id: string;
@@ -6,8 +9,9 @@ type inputProps = {
   type?: string;
   disabled?: boolean;
   required?: boolean;
-  register: UseFormRegister<FieldValues>;
-  errors: FieldErrors;
+  errors: any;
+  control: any;
+  onChange?: () => void;
 };
 
 const Input: React.FC<inputProps> = ({
@@ -15,44 +19,82 @@ const Input: React.FC<inputProps> = ({
   label,
   type = "text",
   disabled,
-  register,
-  required,
+  required = false,
   errors,
+  control,
+  onChange,
 }) => {
+  const [isLoading, setIsLoading] = useState<Boolean>(false);
+  const [passwordType, setPasswordType] = useState<string>("password");
+
+  const toggleDisplayPassword = () => {
+    if (passwordType === "text") {
+      setPasswordType("password");
+    } else {
+      setPasswordType("text");
+    }
+  };
+
   return (
-    <div className="relative w-full">
-      <input
-        id={id}
-        type={type}
-        disabled={disabled}
-        {...register(id, { required })}
-        placeholder=" "
-        className={`
-        peer w-full rounded-md border-2 bg-white p-4 pt-6 font-light outline-none transition disabled:cursor-not-allowed disabled:opacity-70 
-        ${errors[id] ? "border-rose-500" : "border-neutral-300"}
-        ${errors[id] ? "focus:border-rose-500" : "focus:border-black"}
-      `}
-      />
+    <div className="mt-4 flex flex-col">
       <label
         className={`
           text-md 
-          absolute
-          left-4 
-          top-5
-          z-10 
-          origin-[0] 
-          -translate-y-3 
-          transform
-          duration-150 
-          peer-placeholder-shown:translate-y-0 
-          peer-placeholder-shown:scale-100 
-          peer-focus:-translate-y-4
-          peer-focus:scale-75
-          ${errors[id] ? "text-rose-500" : "text-zinc-400"}
+          ${errors[id] ? "text-rose-500" : "text-gray-700"}
         `}
       >
         {label}
       </label>
+      <div className="relative mt-2 flex items-center">
+        <Controller
+          name={id}
+          control={control}
+          render={({ field }) => (
+            <input
+              {...field}
+              type={id.includes("password") ? passwordType : type}
+              disabled={disabled}
+              placeholder={`Enter your ${label}`}
+              onChange={async (e) => {
+                field.onChange(e);
+                if (onChange) {
+                  setIsLoading(true);
+                  onChange();
+                  setIsLoading(false);
+                }
+              }}
+              required={required}
+              className={`
+                w-full rounded border p-2 ${
+                  id.includes("password") ? "flex-1 pr-10" : ""
+                } text-sm text-gray-900  focus:outline-none focus:ring-0        
+                ${errors[id] ? "border-rose-500" : "border-gray-300"}
+                ${
+                  errors[id] ? "focus:border-rose-500" : "focus:border-gray-300"
+                }
+              `}
+            />
+          )}
+        />
+        {id.includes("password") && (
+          <button
+            type="button"
+            onClick={() => {
+              if (id.includes("password")) {
+                toggleDisplayPassword();
+              }
+            }}
+            className="absolute right-2 flex items-center justify-center bg-transparent text-gray-700"
+          >
+            {passwordType == "password" ? <VscEyeClosed /> : <VscEye />}
+          </button>
+        )}
+        {isLoading && (
+          <div className="absolute right-2 flex items-center justify-center text-gray-700">
+            <LoadingSpinner />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

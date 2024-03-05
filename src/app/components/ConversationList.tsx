@@ -102,7 +102,7 @@ const ConversationList: React.FC<ConversationListProps> = () => {
   return (
     <div
       ref={conversationListRef}
-      className={`conversation-list flex flex-1 flex-col gap-2`}
+      className={`conversation-list flex min-h-0 flex-1 flex-col space-y-2 overflow-y-auto scrollbar-none`}
     >
       <p className="text-sm">All messages</p>
       {isLoading ? (

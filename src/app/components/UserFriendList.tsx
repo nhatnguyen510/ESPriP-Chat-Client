@@ -2,7 +2,6 @@
 
 import React from "react";
 import { CurrentUserReturnType } from "@/../lib/session";
-import UserSettings from "./UserSettings";
 import { useSession } from "next-auth/react";
 
 type sideBarProps = {

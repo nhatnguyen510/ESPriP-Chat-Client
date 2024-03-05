@@ -23,11 +23,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       callbackUrl: "/login",
     });
 
-    if (!sentFriendRequests?.length) {
-      localStorage.removeItem("privateKey");
-      localStorage.removeItem("publicKey");
-    }
-
     router.push(signOutResponse?.url);
     close();
   };

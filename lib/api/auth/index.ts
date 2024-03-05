@@ -1,7 +1,10 @@
 import { publicAxios } from "@/../lib/axios";
-import { FormData } from "../../validation/registerSchema";
+import { RegisterDataType } from "../../validation/registerSchema";
+import { AxiosInstance } from "axios";
+import { ChangePasswordDataType } from "../../validation/changePasswordSchema";
+import { User } from "@/../types/next-auth";
 
-export const register = async (data: FormData) => {
+export const registerAccount = async (data: RegisterDataType) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_SERVER_URL}/auth/register`,
     {
@@ -63,17 +66,9 @@ export const refresh = async (refreshToken: string, xTokenId: string) => {
   }
 };
 
-export const logout = async (accessToken: string) => {
+export const logout = async (axiosAuth: AxiosInstance) => {
   try {
-    const res = await publicAxios.post(
-      "/auth/logout",
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+    const res = await axiosAuth.post("/auth/logout");
 
     return res.data;
   } catch (err) {
@@ -81,8 +76,10 @@ export const logout = async (accessToken: string) => {
   }
 };
 
-export const verifyUsername = async (value: string, currentUsername: string = "") => {
-
+export const verifyUsername = async (
+  value: string,
+  currentUsername: string = ""
+) => {
   if (value === currentUsername) {
     return true;
   }
@@ -110,7 +107,6 @@ export const verifyUsername = async (value: string, currentUsername: string = ""
 };
 
 export const verifyEmail = async (value: string, currentEmail: string = "") => {
-
   if (value === currentEmail) {
     return true;
   }
@@ -134,5 +130,18 @@ export const verifyEmail = async (value: string, currentEmail: string = "") => {
   } else {
     console.log({ responseData });
     return false;
+  }
+};
+
+export const changePassword = async (
+  axios: AxiosInstance,
+  data: ChangePasswordDataType
+) => {
+  try {
+    const res = await axios.put<User>("/user/update/password", data);
+
+    return res.data;
+  } catch (err) {
+    return Promise.reject(err);
   }
 };

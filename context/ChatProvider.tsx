@@ -25,6 +25,7 @@ import {
   deriveSessionKey,
   encryptSessionKey,
 } from "../lib/encryption";
+import { getKeys, getPrimeAndGenerator, saveKeys } from "../lib/api/keys";
 
 type ChatContextType = {
   currentChat: ConversationProps | null;
@@ -76,6 +77,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshToken = useRefreshToken(session?.user);
   const { open } = useSessionExpiredModalStore();
   const { sessionKeys, setSessionKeys } = useSessionKeysStore();
+  const [hasFetched, setHasFetched] = useState<boolean>(false);
 
   useEffect(() => {
     // get all friends, conversations, sent friend requests, and friend requests list
@@ -108,6 +110,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         friendRequestsListData,
         sessionKeysData,
       ]);
+
+      console.log("friendRequestsRes: ", friendRequestsRes);
 
       const sessionKeys: Record<string, string> = sessionKeysRes?.data?.reduce(
         (acc, curr) => {
@@ -159,19 +163,75 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       setFriendList?.(friendsRes?.data);
       setSentFriendRequests?.(sentFriendRequestRes?.data);
       setFriendRequestsList?.(friendRequestsRes?.data);
-
       setIsLoading?.(false);
+
+      setHasFetched?.(true);
     };
 
-    status == "authenticated" && fetchAll();
+    const fetchKeys = async () => {
+      const { prime, generator } = await getPrimeAndGenerator(axiosAuth);
+
+      keys.current = createDiffieHellman(prime, "hex", generator as any);
+
+      const existedKeys = await getKeys(axiosAuth);
+
+      if (!existedKeys) {
+        keys.current.generateKeys();
+
+        const publicKey = keys.current.getPublicKey("hex");
+        const privateKey = keys.current.getPrivateKey("hex");
+
+        // encrypt private key with master key
+        const encryptedPrivateKey = encryptSessionKey(
+          privateKey,
+          Buffer.from(session?.user?.master_key as string, "hex")
+        );
+
+        // save public key and encrypted private key to database
+        await saveKeys(
+          axiosAuth,
+          encryptedPrivateKey.encryptedData,
+          publicKey,
+          encryptedPrivateKey.iv
+        );
+
+        // set public key and private key to current keys
+
+        keys.current.setPrivateKey(Buffer.from(privateKey, "hex"));
+        keys.current.setPublicKey(Buffer.from(publicKey, "hex"));
+      } else {
+        const decryptedPrivateKey = decryptSessionKey(
+          {
+            encryptedData: existedKeys.encrypted_private_key,
+            iv: existedKeys.iv,
+          },
+          Buffer.from(session?.user?.master_key as string, "hex")
+        );
+
+        keys.current.setPrivateKey(Buffer.from(decryptedPrivateKey, "hex"));
+        keys.current.setPublicKey(Buffer.from(existedKeys.public_key, "hex"));
+
+        console.log("Public key and Private key: ", {
+          publicKey: keys.current.getPublicKey("hex"),
+          privateKey: keys.current.getPrivateKey("hex"),
+        });
+      }
+    };
+
+    if (status == "authenticated" && !hasFetched) {
+      fetchAll();
+      fetchKeys();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [axiosAuth, session?.user?.master_key, status]);
+  }, [session?.user?.master_key, status]);
 
   useEffect(() => {
     // check if there exists a session key for each conversation
     // if not, create one and save it to the database
+    if (!hasFetched) return;
+
     conversations?.forEach(async (conversation) => {
-      if (!sessionKeys?.[conversation.id]) {
+      if (!sessionKeys?.[conversation.id] && keys?.current) {
         const friend = friendList?.find((friend) =>
           conversation.participants_ids.includes(friend.id)
         );
@@ -203,7 +263,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [conversations, friendList, sessionKeys, hasFetched]);
 
   // connect socket
   useEffect(() => {
@@ -231,40 +291,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           open();
         }
       });
-
-      socket.once(
-        "prime_and_generator",
-        (data: { prime: string; generator: string }) => {
-          console.log("Prime and Generator: ", {
-            prime: data.prime,
-            generator: data.generator,
-          });
-
-          keys.current = createDiffieHellman(
-            data.prime,
-            "hex",
-            data.generator as any
-          );
-
-          const existedPublicKey = localStorage.getItem("publicKey");
-          const existedPrivateKey = localStorage.getItem("privateKey");
-
-          console.log({ existedPublicKey, existedPrivateKey });
-          if (!existedPublicKey || !existedPrivateKey) {
-            keys.current.generateKeys();
-
-            //save keys in local storage
-            localStorage.setItem(
-              "privateKey",
-              keys.current.getPrivateKey("hex")
-            );
-            localStorage.setItem("publicKey", keys.current.getPublicKey("hex"));
-          } else {
-            keys.current.setPrivateKey(Buffer.from(existedPrivateKey, "hex"));
-            keys.current.setPublicKey(Buffer.from(existedPublicKey, "hex"));
-          }
-        }
-      );
 
       socket.on(
         ListenEvent.FriendRequestAccepted,
@@ -369,6 +395,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlineFriends]);
+
+  console.log("hasFetched: ", hasFetched);
 
   return (
     <ChatContext.Provider

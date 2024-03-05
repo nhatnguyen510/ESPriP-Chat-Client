@@ -54,3 +54,13 @@ export type SessionKey = {
   created_at?: string;
   updated_at?: string;
 };
+
+export type Keys = {
+  id: string;
+  user_id: string;
+  public_key: string;
+  encrypted_private_key: string;
+  iv: string;
+  created_at?: string;
+  updated_at?: string;
+};

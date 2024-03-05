@@ -3,32 +3,34 @@
 import * as React from "react";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import Input from "@/app/components/RegisterInput";
+import Input from "@/app/components/Input";
 import LoadingSpinner from "@/app/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { schema, FormData } from "@/../lib/validation/registerSchema";
+import { schema, RegisterDataType } from "@/../lib/validation/registerSchema";
 import { toast } from "react-hot-toast";
 import useRefinement, {
   RefinementCallback,
 } from "@/../lib/hooks/useRefinement";
-import { register, verifyUsername, verifyEmail } from "@/../lib/api/auth";
+import {
+  registerAccount,
+  verifyUsername,
+  verifyEmail,
+} from "@/../lib/api/auth";
+import Image from "next/image";
 
 export default function Register() {
   const [isLoading, setIsLoading] = useState<Boolean>(false);
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState<Boolean>(false);
-  const [showConfirmedPassword, setShowConfirmedPassword] =
-    useState<Boolean>(false);
 
-  const checkNameToBeUnique = (): RefinementCallback<FormData> => {
+  const checkNameToBeUnique = (): RefinementCallback<RegisterDataType> => {
     return async (data) => {
       return await verifyUsername(data.username);
     };
   };
 
-  const checkEmailToBeUnique = (): RefinementCallback<FormData> => {
+  const checkEmailToBeUnique = (): RefinementCallback<RegisterDataType> => {
     return async (data) => {
       return await verifyEmail(data.email);
     };
@@ -46,8 +48,10 @@ export default function Register() {
     control,
     handleSubmit,
     setError,
+    watch,
+    register,
     formState: { errors },
-  } = useForm<FormData>({
+  } = useForm<RegisterDataType>({
     defaultValues: {
       username: "",
       password: "",
@@ -55,7 +59,7 @@ export default function Register() {
       last_name: "",
       email: "",
       confirmed_password: "",
-      // photo_url: "",
+      avatar_url: {},
     },
 
     resolver: zodResolver(
@@ -73,12 +77,47 @@ export default function Register() {
     // criteriaMode: "all",
   });
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const watchAvatar = watch("avatar_url");
+
+  const uploadAvatar = async (avatar: any) => {
+    if (!avatar) {
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("file", avatar);
+    formData.append("upload_preset", "esprip-chat-images");
+
+    const uploadResponse = await fetch(
+      "https://api.cloudinary.com/v1_1/dicuu83mu/image/upload",
+      {
+        method: "POST",
+        body: formData as any,
+      }
+    );
+
+    const uploadResult = await uploadResponse.json();
+
+    console.log("uploadResult: ", uploadResult);
+
+    return uploadResult.secure_url;
+  };
+
+  const onSubmit: SubmitHandler<RegisterDataType> = async (data) => {
     setIsLoading(true);
 
+    console.log("data: ", data);
     try {
+      const avatar = data.avatar_url[0];
+
+      const uploadResult = await uploadAvatar(avatar);
+
       const response = await toast.promise(
-        register(data),
+        registerAccount({
+          ...data,
+          avatar_url: uploadResult,
+        }),
         {
           loading: "Registering...",
           success: "Registered successfully 🎉",
@@ -99,14 +138,6 @@ export default function Register() {
     setIsLoading(false);
   };
 
-  const handleDisplayPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleDisplayConfirmedPassword = () => {
-    setShowConfirmedPassword(!showConfirmedPassword);
-  };
-
   return (
     <>
       <h2 className="text-center text-2xl font-bold tracking-wide text-gray-800">
@@ -115,6 +146,37 @@ export default function Register() {
 
       <div className="my-8 text-sm">
         <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex items-center gap-2">
+            <Image
+              src={
+                watchAvatar &&
+                watchAvatar.length > 0 &&
+                watchAvatar[0] instanceof File
+                  ? URL.createObjectURL(watchAvatar[0])
+                  : "/avatar-cute-2.jpeg"
+              }
+              alt="avatar"
+              width={80}
+              height={80}
+              className="h-20 w-20 rounded-full"
+            />
+            <input
+              {...register("avatar_url")}
+              type="file"
+              accept="image/*"
+              className="
+                  rounded border border-gray-300 p-2 text-sm  text-gray-900 focus:border-gray-300        
+                  focus:outline-none
+                  focus:ring-0
+                "
+            />
+          </div>
+          {errors.avatar_url && (
+            <p className="mt-1 text-sm text-red-500">
+              {errors?.avatar_url?.message as any}
+            </p>
+          )}
+
           <Input
             id="username"
             label="Username"
@@ -183,12 +245,10 @@ export default function Register() {
           <Input
             id="password"
             label="Password"
-            type={`${showPassword ? "text" : "password"}`}
             disabled={!!isLoading}
             control={control}
             errors={errors}
             required={true}
-            handleDisplayPassword={handleDisplayPassword}
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-500">
@@ -198,12 +258,10 @@ export default function Register() {
           <Input
             id="confirmed_password"
             label="Password Confirmation"
-            type={`${showConfirmedPassword ? "text" : "password"}`}
             disabled={!!isLoading}
             control={control}
             errors={errors}
             required={true}
-            handleDisplayConfirmedPassword={handleDisplayConfirmedPassword}
           />
           {errors.confirmed_password && (
             <p className="mt-1 text-sm text-red-500">

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { signOut } from "next-auth/react";
 import { useChatContext } from "@/../context/ChatProvider";
+import { deleteKeys } from "@/../lib/api/keys";
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -36,8 +37,8 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
     });
 
     if (!sentFriendRequests?.length) {
-      localStorage.removeItem("privateKey");
-      localStorage.removeItem("publicKey");
+      // Call API for deleting keys
+      await deleteKeys(axiosAuth);
     }
 
     router.push(logoutResponse?.url as string);

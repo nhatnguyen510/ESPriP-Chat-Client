@@ -20,14 +20,6 @@ const useRoutes = () => {
         icon: HiUsers,
         active: pathname === "/friends",
       },
-      // {
-      //   label: "Logout",
-      //   onClick: () => {
-      //     console.log("Logout");
-      //   },
-      //   href: "#",
-      //   icon: HiArrowLeftOnRectangle,
-      // },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [pathname]

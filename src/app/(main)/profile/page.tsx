@@ -12,7 +12,7 @@ import {
   schema,
   UpdateUserDataType,
 } from "@/../lib/validation/updateUserSchema";
-import Input from "@/app/components/RegisterInput";
+import Input from "@/app/components/Input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import useRefinement, {
   RefinementCallback,
@@ -23,6 +23,7 @@ import FormData from "form-data";
 import { useSession } from "next-auth/react";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import toast from "react-hot-toast";
+import { ChangePasswordForm } from "@/app/components/Form/ChangePasswordForm";
 
 interface pageProps {}
 
@@ -168,8 +169,8 @@ export default function Profile(props: pageProps) {
         <div className="flex items-center justify-center gap-2">
           <div className="flex w-1/4 flex-col">
             <h3>Personal Information</h3>
-            <p className="text-xs text-gray-300">
-              Use a permanent address where you can receive email
+            <p className="text-xs text-gray-400">
+              Use a permanent address where you can receive email.
             </p>
           </div>
           <div className="w-3/4 p-4">
@@ -209,7 +210,6 @@ export default function Profile(props: pageProps) {
               <Input
                 id="username"
                 label="Username"
-                defaultValue={user?.username}
                 disabled={!!isLoading}
                 control={control}
                 onChange={() => {
@@ -228,7 +228,6 @@ export default function Profile(props: pageProps) {
                   <Input
                     id="first_name"
                     label="First Name"
-                    defaultValue={user?.first_name}
                     disabled={!!isLoading}
                     control={control}
                     errors={errors}
@@ -244,7 +243,6 @@ export default function Profile(props: pageProps) {
                   <Input
                     id="last_name"
                     label="Last Name"
-                    defaultValue={user?.last_name}
                     disabled={!!isLoading}
                     errors={errors}
                     control={control}
@@ -260,7 +258,6 @@ export default function Profile(props: pageProps) {
                 id="email"
                 label="Email"
                 type="email"
-                defaultValue={user?.email}
                 disabled={!!isLoading}
                 control={control}
                 onChange={() => {
@@ -273,7 +270,7 @@ export default function Profile(props: pageProps) {
                   {errors.email?.message}
                 </p>
               )}
-              <div className="my-4 flex items-center justify-end space-x-4">
+              <div className="my-4 flex items-center justify-start space-x-4">
                 <Button
                   color="danger"
                   variant="ghost"
@@ -295,7 +292,17 @@ export default function Profile(props: pageProps) {
             </form>
           </div>
         </div>
-        <div>Change password</div>
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex w-1/4 flex-col">
+            <h3>Change Password</h3>
+            <p className="text-xs text-gray-400">
+              Update your password associated with your account.
+            </p>
+          </div>
+          <div className="w-3/4 p-4">
+            <ChangePasswordForm />
+          </div>
+        </div>
       </div>
     </>
   );

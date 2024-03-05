@@ -2,7 +2,6 @@
 
 import DesktopItem from "./DesktopItem";
 import useRoutes from "@/../lib/hooks/useRoutes";
-import SettingsModal from "./SettingsModal";
 import { useState } from "react";
 import { CurrentUserReturnType } from "@/../lib/session";
 import { LogoutModal } from "./Modal/LogoutModal";
@@ -30,7 +29,6 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = () => {
 
   return (
     <>
-      <SettingsModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
       <LogoutModal isOpen={isModalOpen} onOpenChange={onOpenChange} />
       <div
         className="
