@@ -184,7 +184,7 @@ export default function Profile(props: pageProps) {
                       ? URL.createObjectURL(watchAvatar[0])
                       : user?.avatar_url
                       ? user?.avatar_url
-                      : "/avatar-cute-2.jpeg"
+                      : "/no-avatar.png"
                   }
                   alt="avatar"
                   width={80}

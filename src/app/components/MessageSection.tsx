@@ -47,8 +47,6 @@ const MessageSection: React.FC<MessageSectionProps> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  console.log("searchedConversations: ", searchedConversations);
-
   return (
     <>
       <div className="flex h-full flex-col gap-4 border-r-[1px] px-4 py-6">

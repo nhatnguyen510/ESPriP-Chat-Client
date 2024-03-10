@@ -138,7 +138,7 @@ export const FriendRequestsList: React.FC<FriendRequestsListProps> = () => {
                         name={`${friend.first_name} ${friend.last_name}`}
                         description={friend.username}
                         avatarProps={{
-                          src: friend.avatar_url || "/avatar-cute-2.jpeg",
+                          src: friend.avatar_url || "/no-avatar.png",
                         }}
                       />
                       <ButtonGroup>

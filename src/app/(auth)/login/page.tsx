@@ -81,6 +81,16 @@ export default function Login() {
             required={true}
           />
 
+          <div className="mt-4 flex items-center justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-blue-600 hover:text-blue-700 hover:underline"
+              title="Forgot Password?"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
           {errors.root?.serverError && (
             <h3 className="mt-2 text-sm text-red-500">
               {errors?.root?.serverError.message}

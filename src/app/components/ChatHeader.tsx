@@ -24,7 +24,7 @@ const ChatHeader: React.FC<chatHeaderProps> = ({}) => {
             ></div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300 text-2xl font-bold text-white sm:h-16 sm:w-16">
               <Image
-                src={selectedUser?.avatar_url || "/avatar-cute-2.jpeg"}
+                src={selectedUser?.avatar_url || "/no-avatar.png"}
                 alt="Avatar"
                 fill
                 className="rounded-full"

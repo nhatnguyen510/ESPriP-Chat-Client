@@ -194,7 +194,10 @@ export default function Friends() {
                     onClear={() => setSearchResults([])}
                   />
                 </div>
-                <FriendList searchedFriends={searchResults} />
+                <FriendList
+                  searchedFriends={searchResults}
+                  searchInput={searchInput}
+                />
               </CardBody>
             </Card>
           </Tab>

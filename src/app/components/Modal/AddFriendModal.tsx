@@ -175,7 +175,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                               description={user.username}
                               className="transition-transform"
                               avatarProps={{
-                                src: user.avatar_url || "/avatar-cute-2.jpeg",
+                                src: user.avatar_url || "/no-avatar.png",
                               }}
                             />
                           </PopoverTrigger>
@@ -221,7 +221,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                                   isBordered
                                   radius="full"
                                   size="md"
-                                  src={user.avatar_url || "/avatar-cute-2.jpeg"}
+                                  src={user.avatar_url || "/no-avatar.png"}
                                 />
                                 <div className="flex flex-col items-start justify-center">
                                   <h4 className="text-small font-semibold leading-none text-default-600">

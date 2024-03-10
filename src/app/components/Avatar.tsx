@@ -24,7 +24,7 @@ const Avatar: React.FC<AvatarProps> = ({ image, isOnline }) => {
         md:w-11
       "
         >
-          <Image fill src={image || "/avatar-cute-2.jpeg"} alt="Avatar" />
+          <Image fill src={image || "/no-avatar.png"} alt="Avatar" />
         </div>
         <span
           className={clsx(

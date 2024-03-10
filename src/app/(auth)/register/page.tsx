@@ -153,7 +153,7 @@ export default function Register() {
                 watchAvatar.length > 0 &&
                 watchAvatar[0] instanceof File
                   ? URL.createObjectURL(watchAvatar[0])
-                  : "/avatar-cute-2.jpeg"
+                  : "/no-avatar.png"
               }
               alt="avatar"
               width={80}

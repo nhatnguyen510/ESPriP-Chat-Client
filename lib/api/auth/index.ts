@@ -145,3 +145,37 @@ export const changePassword = async (
     return Promise.reject(err);
   }
 };
+
+export const forgotPassword = async (email: string) => {
+  try {
+    const res = await publicAxios.post<{
+      message: string;
+    }>("/auth/forgot-password", {
+      email,
+    });
+
+    return res.data;
+  } catch (err) {
+    return Promise.reject(err);
+  }
+};
+
+export const resetPassword = async (
+  email: string,
+  token: string,
+  password: string
+) => {
+  try {
+    const res = await publicAxios.post<{
+      message: string;
+    }>("/auth/reset-password", {
+      email,
+      token,
+      password,
+    });
+
+    return res.data;
+  } catch (err) {
+    return Promise.reject(err);
+  }
+};

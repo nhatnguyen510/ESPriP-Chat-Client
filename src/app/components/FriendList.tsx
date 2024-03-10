@@ -24,9 +24,13 @@ import { FriendCard } from "./Friend";
 
 interface FriendListProps {
   searchedFriends?: FriendProps[];
+  searchInput?: string;
 }
 
-export const FriendList: React.FC<FriendListProps> = ({ searchedFriends }) => {
+export const FriendList: React.FC<FriendListProps> = ({
+  searchedFriends,
+  searchInput,
+}) => {
   const axiosAuth = useAxiosAuth();
   const { friendList, setFriendList, setConversations } = useChatContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -78,14 +82,18 @@ export const FriendList: React.FC<FriendListProps> = ({ searchedFriends }) => {
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
-        {searchedFriends?.length ? (
-          searchedFriends.map((friend, i) => (
-            <FriendCard
-              key={friend.id}
-              friend={friend}
-              onHandleAction={onHandleAction}
-            />
-          ))
+        {searchInput ? (
+          searchedFriends?.length ? (
+            searchedFriends.map((friend, i) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                onHandleAction={onHandleAction}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">No search results</p>
+          )
         ) : friendList?.length ? (
           friendList.map((friend, i) => (
             <FriendCard
