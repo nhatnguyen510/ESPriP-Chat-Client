@@ -11,7 +11,7 @@ interface AvatarProps {
 const Avatar: React.FC<AvatarProps> = ({ image, isOnline }) => {
   return (
     <>
-      <div className="relative w-12">
+      <div className="relative flex w-12 items-center justify-center">
         <div
           className="
         relative 

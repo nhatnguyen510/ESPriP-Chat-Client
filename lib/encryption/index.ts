@@ -22,15 +22,15 @@ export const encrypt = (text: string, key: Buffer) => {
 };
 
 export const decrypt = (
-  encryptedData: { iv: string; encryptedData: string },
+  data: { iv: string; encryptedData: string },
   key: Buffer
 ) => {
   const decipher = crypto.createDecipheriv(
     "aes-256-cbc",
     key,
-    Buffer.from(encryptedData.iv, "hex")
+    Buffer.from(data.iv, "hex")
   );
-  let decrypted = decipher.update(encryptedData.encryptedData, "hex", "utf8");
+  let decrypted = decipher.update(data.encryptedData, "hex", "utf8");
   decrypted += decipher.final("utf8");
   return decrypted;
 };

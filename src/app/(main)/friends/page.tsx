@@ -23,6 +23,7 @@ import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import { debounce } from "lodash";
 import { FriendProps } from "@/../types";
 import { useChatContext } from "@/../context/ChatProvider";
+import { useSession } from "next-auth/react";
 
 export default function Friends() {
   const axiosAuth = useAxiosAuth();
@@ -31,6 +32,8 @@ export default function Friends() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [searchInput, setSearchInput] = useState<string>("");
   const [searchResults, setSearchResults] = useState<FriendProps[]>([]);
+  const { data } = useSession();
+  const user = data?.user;
 
   const numberOfFriends = useMemo(() => {
     if (friendList) {
@@ -76,7 +79,7 @@ export default function Friends() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  console.log("searchResults", searchResults);
+  console.log("User in Friend Page: ", user);
 
   return (
     <>

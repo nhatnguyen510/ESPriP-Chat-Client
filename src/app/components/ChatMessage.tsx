@@ -1,10 +1,14 @@
 import React from "react";
+import { Image } from "@nextui-org/react";
+import NextImage from "next/image";
+import { ImagePreview } from "./ImagePreview";
 
 type chatMessageProps = {
   message: string;
   isSentByUser?: boolean;
   isLastMessage?: boolean;
   isSeen?: boolean;
+  isImage?: boolean;
 };
 
 const ChatMessage: React.FC<chatMessageProps> = ({
@@ -12,6 +16,7 @@ const ChatMessage: React.FC<chatMessageProps> = ({
   isSentByUser,
   isLastMessage,
   isSeen,
+  isImage,
 }) => {
   const imageUrl = isSentByUser
     ? "https://images.unsplash.com/photo-1549078642-b2ba4bda0cdb?ixlib=rb-1.2.1&amp;ixid=eyJhcHBfaWQiOjEyMDd9&amp;auto=format&amp;fit=facearea&amp;facepad=3&amp;w=144&amp;h=144"
@@ -23,19 +28,23 @@ const ChatMessage: React.FC<chatMessageProps> = ({
     <div className="chat-message">
       <div className={`flex items-end ${isSentByUser ? "justify-end" : ""}`}>
         <div
-          className={`mx-2 flex max-w-xs flex-col items-${
+          className={`mx-2 flex max-w-md flex-col items-${
             isSentByUser ? "end" : "start"
           } space-y-2 text-xs ${orderClass}`}
         >
-          <span
-            className={`inline-block break-words rounded-lg ${
-              isSentByUser
-                ? "bg-blue-600 text-white"
-                : "bg-gray-300 text-gray-600"
-            } px-4 py-2`}
-          >
-            {message}
-          </span>
+          {isImage ? (
+            <ImagePreview imageUrl={message} />
+          ) : (
+            <span
+              className={`inline-block break-words rounded-lg ${
+                isSentByUser
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-300 text-gray-600"
+              } px-4 py-2`}
+            >
+              {message}
+            </span>
+          )}
           {isSentByUser && isLastMessage && (
             <span className="text-xs text-gray-500">
               {isSeen ? "Seen" : "Sent"}

@@ -40,7 +40,10 @@ const ChatSection: React.FC<ChatSectionProps> = () => {
       const decryptedMessage = {
         ...message,
         message: decryptMessage(
-          JSON.parse(message.message),
+          {
+            iv: message.iv,
+            encryptedData: message.message,
+          },
           Buffer.from(sessionKeys[updatedConversation.id], "hex")
         ),
       };

@@ -111,8 +111,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         sessionKeysData,
       ]);
 
-      console.log("friendRequestsRes: ", friendRequestsRes);
-
       const sessionKeys: Record<string, string> = sessionKeysRes?.data?.reduce(
         (acc, curr) => {
           const decryptedKey = decryptSessionKey(
@@ -129,21 +127,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
       const decryptedConversations = conversationsRes?.data?.map(
         (conversation) => {
-          console.log("conversation: ", conversation);
-          const encryptedLastMessage = conversation?.last_message?.message;
-
-          console.log("encryptedLastMessage: ", encryptedLastMessage);
+          const encryptedLastMessage = conversation?.last_message;
 
           if (!encryptedLastMessage) return conversation;
 
-          const { iv, encryptedData } = JSON.parse(
-            encryptedLastMessage as string
-          );
+          const { iv, message } = encryptedLastMessage;
 
           const decryptedLastMessage = decryptMessage(
             {
               iv,
-              encryptedData,
+              encryptedData: message,
             },
             Buffer.from(sessionKeys?.[conversation.id] as string, "hex")
           );
@@ -223,7 +216,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       fetchKeys();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.master_key, status]);
+  }, [hasFetched, session?.user?.master_key, status]);
 
   useEffect(() => {
     // check if there exists a session key for each conversation

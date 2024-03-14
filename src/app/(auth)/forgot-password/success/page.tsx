@@ -19,6 +19,8 @@ export default function ForgotPasswordSuccess() {
 
     try {
       const { message } = await forgotPassword(email as string);
+
+      toast.success(message);
     } catch (err) {
       if (err instanceof AxiosError) {
         toast.error(err.response?.data?.message);

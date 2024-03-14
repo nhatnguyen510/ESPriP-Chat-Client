@@ -16,6 +16,7 @@ export type MessageProps = {
   sender_id: string;
   conversation_id: string;
   message: string;
+  iv: string;
   seen: boolean;
   sender: FriendProps;
   created_at?: string;

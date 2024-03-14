@@ -1,10 +1,8 @@
 "use client";
 
-import React, { use, useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ChatMessage from "./ChatMessage";
-import { ConversationProps, MessageProps } from "@/../types";
-import { CurrentUserReturnType } from "@/../lib/session";
+import { MessageProps } from "@/../types";
 import useAxiosAuth from "@/../lib/hooks/useAxiosAuth";
 import socket from "@/../lib/socket";
 import { useChatContext } from "@/../context/ChatProvider";
@@ -15,6 +13,8 @@ import { EmitEvent, ListenEvent } from "@/../lib/enum";
 import { useSession } from "next-auth/react";
 import { useSessionKeysStore } from "@/../lib/zustand/store";
 import { decryptMessage } from "@/../lib/encryption";
+import { PhotoProvider } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 
 type chatHistoryProps = {};
 
@@ -36,10 +36,6 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
   const loadingRef = useRef<HTMLSpanElement | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const [isMessageLoading, setIsMessageLoading] = useState<boolean>(false);
-  const [isOldMessageVisible, setIsOldMessageVisible] =
-    useState<boolean>(false);
-
   const [isScrollDownBtnVisible, setIsScrollDownBtnVisible] =
     useState<boolean>(false);
 
@@ -50,6 +46,10 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
     currentChat,
     user?.id
   );
+
+  const isMessageImageUrl = (message: string) => {
+    return message.match(/\.(jpeg|jpg|gif|png)$/) != null;
+  };
 
   // Function to fetch more messages when scrolling to the top
   const fetchMoreMessages = useCallback(async () => {
@@ -79,7 +79,10 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
         return {
           ...message,
           message: decryptMessage(
-            JSON.parse(message.message),
+            {
+              iv: message.iv,
+              encryptedData: message.message,
+            },
             Buffer.from(sessionKeys[currentChat.id], "hex")
           ),
         };
@@ -101,9 +104,7 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       if (currentChat?.id) {
-        setIsMessageLoading(true);
-
-        const messageRes = await axiosAuth.get<MessageProps[]>(
+        const { data } = await axiosAuth.get<MessageProps[]>(
           `/conversation/${currentChat?.id}/message`,
           {
             params: {
@@ -114,11 +115,14 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
         );
 
         // decrypt messages
-        const decryptedMessages = messageRes?.data?.map((message) => {
+        const decryptedMessages = data?.map((message) => {
           return {
             ...message,
             message: decryptMessage(
-              JSON.parse(message.message),
+              {
+                iv: message.iv,
+                encryptedData: message.message,
+              },
               Buffer.from(sessionKeys[currentChat.id], "hex")
             ),
           };
@@ -126,15 +130,17 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
 
         setMessages?.(decryptedMessages);
 
-        setNoMoreMessages(false);
-
-        setIsMessageLoading(false);
+        if (data.length < 20) {
+          setNoMoreMessages(true);
+        } else {
+          setNoMoreMessages(false);
+        }
       }
     };
 
     fetchMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat, sessionKeys]);
+  }, [currentChat?.id, sessionKeys]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -148,6 +154,7 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
   // Mark messages as seen
   useEffect(() => {
     if (
+      user &&
       currentChat &&
       messages?.length &&
       !currentChat.last_message?.seen &&
@@ -230,65 +237,68 @@ const ChatHistory: React.FC<chatHistoryProps> = () => {
 
   return (
     <>
-      <div
-        id="messages"
-        ref={chatContainerRef}
-        onScroll={() => {
-          if (
-            chatContainerRef.current &&
-            !noMoreMessages &&
-            Math.floor(
-              (chatContainerRef.current.scrollTop /
-                (chatContainerRef.current.scrollHeight -
-                  chatContainerRef.current.clientHeight)) *
-                100
-            ) < 90
-          ) {
-            setIsScrollDownBtnVisible(true);
-          } else {
-            setIsScrollDownBtnVisible(false);
-          }
-        }}
-        className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400 [&>*:first-child]:mt-auto"
-      >
-        {messages?.length && !noMoreMessages ? (
-          <span ref={loadingRef} className="flex justify-center">
-            <LoadingSpinner />
-          </span>
-        ) : null}
+      <PhotoProvider>
+        <div
+          id="messages"
+          ref={chatContainerRef}
+          onScroll={() => {
+            if (
+              chatContainerRef.current &&
+              !noMoreMessages &&
+              Math.floor(
+                (chatContainerRef.current.scrollTop /
+                  (chatContainerRef.current.scrollHeight -
+                    chatContainerRef.current.clientHeight)) *
+                  100
+              ) < 90
+            ) {
+              setIsScrollDownBtnVisible(true);
+            } else {
+              setIsScrollDownBtnVisible(false);
+            }
+          }}
+          className="flex h-full flex-col space-y-4 overflow-auto p-3 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-400 [&>*:first-child]:mt-auto"
+        >
+          {messages?.length && !noMoreMessages ? (
+            <span ref={loadingRef} className="flex justify-center">
+              <LoadingSpinner />
+            </span>
+          ) : null}
 
-        {messages?.length ? (
-          messages?.map((message) => {
-            return (
-              <ChatMessage
-                key={message.id}
-                message={message.message}
-                isSentByUser={user?.id == message.sender_id}
-                isLastMessage={lastMessage?.id == message.id}
-                isSeen={isLastMessageSeen}
-              />
-            );
-          })
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center">
-            <p className="mt-4 text-lg text-gray-400">
-              No messages yet, start chatting
-            </p>
-          </div>
-        )}
-        {isScrollDownBtnVisible && (
-          <span
-            className="absolute bottom-24 left-0 right-0 flex cursor-pointer justify-center"
-            onClick={() => {
-              lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            <BsArrowDownCircle className="h-6 w-6 animate-bounce text-gray-400" />
-          </span>
-        )}
+          {messages?.length ? (
+            messages?.map((message) => {
+              return (
+                <ChatMessage
+                  key={message.id}
+                  message={message.message}
+                  isSentByUser={user?.id == message.sender_id}
+                  isLastMessage={lastMessage?.id == message.id}
+                  isSeen={isLastMessageSeen}
+                  isImage={isMessageImageUrl(message.message)}
+                />
+              );
+            })
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center">
+              <p className="mt-4 text-lg text-gray-400">
+                No messages yet, start chatting
+              </p>
+            </div>
+          )}
+          {isScrollDownBtnVisible && (
+            <span
+              className="absolute bottom-24 left-0 right-0 flex cursor-pointer justify-center"
+              onClick={() => {
+                lastMessageRef?.current?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              <BsArrowDownCircle className="h-6 w-6 animate-bounce text-gray-400" />
+            </span>
+          )}
 
-        <div ref={lastMessageRef}></div>
-      </div>
+          <div ref={lastMessageRef}></div>
+        </div>
+      </PhotoProvider>
     </>
   );
 };
