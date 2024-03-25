@@ -97,8 +97,6 @@ const ConversationList: React.FC<ConversationListProps> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, currentChat?.id, session?.user?.id]);
 
-  console.log({ conversations, friendList });
-
   return (
     <div
       ref={conversationListRef}

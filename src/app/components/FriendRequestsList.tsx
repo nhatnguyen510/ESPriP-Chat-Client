@@ -94,8 +94,6 @@ export const FriendRequestsList: React.FC<FriendRequestsListProps> = () => {
       }
     );
 
-    console.log("encryptionData: ", encryptionData);
-
     setSessionKeys?.((prev) => ({
       ...(prev as any),
       [requestAcceptData.conversation.id]: sessionKey,

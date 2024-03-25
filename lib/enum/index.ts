@@ -8,10 +8,12 @@ export enum ListenEvent {
   ReceiveMessage = "receive_message",
   MessageSeen = "message_seen",
   FriendRequestAccepted = "friend_request_accepted",
+  FriendRequestReceived = "friend_request_received",
 }
 
 export enum EmitEvent {
   MarkMessageAsSeen = "mark_message_as_seen",
+  SendFriendRequest = "send_friend_request",
 }
 
 export enum Status {

@@ -339,6 +339,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           }));
         }
       );
+
+      socket.on(
+        ListenEvent.FriendRequestReceived,
+        (data: FriendRequestProps) => {
+          console.log("friend request received", data);
+          toast.success(
+            `${data.requested_user.username} sent you a friend request`
+          );
+          setFriendRequestsList?.((prev) => [data, ...prev]);
+        }
+      );
     }
 
     if (status === "authenticated") {
@@ -349,6 +360,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off("connect_error");
       socket.off("prime_and_generator");
       socket.off(ListenEvent.FriendRequestAccepted);
+      socket.off(ListenEvent.FriendRequestReceived);
       socket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

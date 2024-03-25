@@ -41,7 +41,6 @@ export const schema = z
       .optional()
       .refine(
         (files) => {
-          console.log("files: ", files);
           return (
             _.isEmpty(files) ||
             files.length === 0 ||

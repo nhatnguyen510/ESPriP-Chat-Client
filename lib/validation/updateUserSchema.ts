@@ -30,7 +30,6 @@ export const schema = z.object({
     .optional()
     .refine(
       (files) => {
-        console.log("files: ", files);
         return (
           _.isEmpty(files) ||
           files.length === 0 ||

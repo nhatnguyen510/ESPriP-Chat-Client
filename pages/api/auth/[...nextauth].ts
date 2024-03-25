@@ -19,7 +19,6 @@ export const nextAuthOptions: NextAuthOptions = {
 
           return res;
         } catch (err) {
-          console.log("Error: ", err);
           throw new Error(JSON.stringify(err));
         }
       },
@@ -34,8 +33,6 @@ export const nextAuthOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) {
-        console.log("Session: ", session);
-
         return {
           ...token,
           ...session,

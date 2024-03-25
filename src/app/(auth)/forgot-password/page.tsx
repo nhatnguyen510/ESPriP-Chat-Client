@@ -15,7 +15,6 @@ type ForgotPasswordDataType = {
 };
 
 export default function ForgotPassword() {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
 
   const {
@@ -23,7 +22,7 @@ export default function ForgotPassword() {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
   } = useForm<ForgotPasswordDataType>({
     defaultValues: {
       email: "",
@@ -32,8 +31,6 @@ export default function ForgotPassword() {
   });
 
   const onSubmit: SubmitHandler<ForgotPasswordDataType> = async (data) => {
-    setIsLoading(true);
-
     try {
       const { message } = await forgotPassword(data.email);
       router.push(`/forgot-password/success?email=${data.email}`);
@@ -42,8 +39,6 @@ export default function ForgotPassword() {
         toast.error(err.response?.data?.message);
       }
     }
-
-    setIsLoading(false);
   };
 
   return (

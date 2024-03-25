@@ -54,7 +54,6 @@ const ChatSection: React.FC<ChatSectionProps> = () => {
       };
 
       if (currentChat?.id === updatedConversation.id) {
-        console.log("Adding message to state");
         setMessages?.((prev) => [...prev, decryptedMessage]);
         setCurrentChat?.(decryptedUpdatedConversation);
       }

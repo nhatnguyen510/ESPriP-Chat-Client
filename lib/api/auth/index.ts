@@ -98,10 +98,8 @@ export const verifyUsername = async (
   const responseData = await response.json();
 
   if (response.ok) {
-    console.log({ responseData });
     return true;
   } else {
-    console.log({ responseData });
     return false;
   }
 };
@@ -125,10 +123,8 @@ export const verifyEmail = async (value: string, currentEmail: string = "") => {
   const responseData = await response.json();
 
   if (response.ok) {
-    console.log({ responseData });
     return true;
   } else {
-    console.log({ responseData });
     return false;
   }
 };

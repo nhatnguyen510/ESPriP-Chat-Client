@@ -37,20 +37,15 @@ export const FriendList: React.FC<FriendListProps> = ({
   const [selectedFriend, setSelectedFriend] =
     React.useState<FriendProps | null>(null);
 
-  console.log("selectedFriend", selectedFriend);
-
   const onHandleAction = (key: any, friend: FriendProps) => {
     setSelectedFriend(friend);
     if (key === "view-profile") {
-      console.log("view profile");
     } else if (key === "remove-friend") {
       onOpen();
     }
   };
 
   const handleRemoveFriend = async () => {
-    console.log("remove friend", selectedFriend);
-
     try {
       const { data } = await axiosAuth.post<{
         message: string;

@@ -15,7 +15,6 @@ type LoginDataType = {
 };
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState<Boolean>(false);
   const router = useRouter();
 
   const {
@@ -23,7 +22,7 @@ export default function Login() {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
     trigger,
   } = useForm<LoginDataType>({
     defaultValues: {
@@ -34,8 +33,6 @@ export default function Login() {
   });
 
   const onSubmit: SubmitHandler<LoginDataType> = async (data) => {
-    setIsLoading(true);
-
     const res = await signIn("credentials", {
       username: data.username,
       password: data.password,
@@ -51,8 +48,6 @@ export default function Login() {
     } else {
       router.push(res?.url as string);
     }
-
-    setIsLoading(false);
   };
 
   return (

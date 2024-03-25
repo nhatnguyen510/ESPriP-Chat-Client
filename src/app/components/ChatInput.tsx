@@ -60,17 +60,12 @@ const ChatInput: React.FC<chatInputProps> = () => {
 
     const uploadResult = await uploadResponse.json();
 
-    console.log("uploadResult: ", uploadResult);
-
     return uploadResult.secure_url;
   };
 
   const onDropImage = async (e: React.DragEvent<HTMLInputElement>) => {
     e.preventDefault();
-    console.log("Dropped");
-
     const files = e.dataTransfer.files;
-    console.log(files);
 
     const file = files[0];
 
@@ -137,6 +132,11 @@ const ChatInput: React.FC<chatInputProps> = () => {
           ...updatedConversation,
           last_message: decryptedMessage,
         };
+
+        console.log(
+          "decryptedUpdatedConversation: ",
+          decryptedUpdatedConversation
+        );
 
         if (currentChat?.id == updatedConversation.id) {
           setMessages?.((prev) => [...prev, decryptedMessage]);

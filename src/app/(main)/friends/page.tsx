@@ -43,7 +43,6 @@ export default function Friends() {
 
   const numberOfOnlineFriends = useMemo(() => {
     if (onlineFriends) {
-      console.log("onlineFriends", onlineFriends);
       return onlineFriends.length;
     }
   }, [onlineFriends]);
@@ -64,8 +63,6 @@ export default function Friends() {
         `/friends/search?query=${searchInput}`
       );
 
-      console.log("data", data);
-
       setSearchResults(data);
     };
 
@@ -78,8 +75,6 @@ export default function Friends() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
-
-  console.log("User in Friend Page: ", user);
 
   return (
     <>

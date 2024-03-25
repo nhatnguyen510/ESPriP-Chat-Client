@@ -37,7 +37,6 @@ export const OnlineFriendList: React.FC<OnlineFriendListProps> = () => {
     );
 
     if (conversation) {
-      console.log("conversation", conversation);
       setCurrentChat?.(conversation);
     }
 

@@ -34,8 +34,6 @@ export default function Profile(props: pageProps) {
 
   const axiosAuth = useAxiosAuth();
 
-  const [isLoading, setIsLoading] = useState<Boolean>(false);
-
   const checkNameToBeUnique = (): RefinementCallback<UpdateUserDataType> => {
     return async (data) => {
       return await verifyUsername(
@@ -66,7 +64,7 @@ export default function Profile(props: pageProps) {
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
   } = useForm<UpdateUserDataType>({
     defaultValues: {
       username: user?.username,
@@ -111,21 +109,13 @@ export default function Profile(props: pageProps) {
 
     const uploadResult = await uploadResponse.json();
 
-    console.log("uploadResult: ", uploadResult);
-
     return uploadResult.secure_url;
   };
 
   const onSubmit: SubmitHandler<UpdateUserDataType> = async (data) => {
-    setIsLoading(true);
-
-    console.log("data: ", data);
-
     try {
       // Make a request to the server to update the user's profile
       const avatar = data.avatar_url[0];
-
-      console.log("avatar: ", avatar);
 
       const uploadResult = await uploadAvatar(avatar);
 
@@ -136,8 +126,6 @@ export default function Profile(props: pageProps) {
         avatar_url: uploadResult,
       });
 
-      console.log("updateUserResponse: ", updateUserResponse);
-
       // Update the session
       await update(updateUserResponse.data);
 
@@ -145,8 +133,6 @@ export default function Profile(props: pageProps) {
     } catch (err) {
       console.log("err: ", err);
     }
-
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -159,9 +145,6 @@ export default function Profile(props: pageProps) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.username, user?.first_name, user?.last_name, user?.email]);
-
-  console.log("watchAvatar: ", watchAvatar);
-  console.log("errors: ", errors);
 
   return (
     <>

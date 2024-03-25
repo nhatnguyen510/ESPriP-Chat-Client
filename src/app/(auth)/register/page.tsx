@@ -21,7 +21,6 @@ import {
 import Image from "next/image";
 
 export default function Register() {
-  const [isLoading, setIsLoading] = useState<Boolean>(false);
   const router = useRouter();
 
   const checkNameToBeUnique = (): RefinementCallback<RegisterDataType> => {
@@ -50,7 +49,7 @@ export default function Register() {
     setError,
     watch,
     register,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
   } = useForm<RegisterDataType>({
     defaultValues: {
       username: "",
@@ -99,15 +98,10 @@ export default function Register() {
 
     const uploadResult = await uploadResponse.json();
 
-    console.log("uploadResult: ", uploadResult);
-
     return uploadResult.secure_url;
   };
 
   const onSubmit: SubmitHandler<RegisterDataType> = async (data) => {
-    setIsLoading(true);
-
-    console.log("data: ", data);
     try {
       const avatar = data.avatar_url[0];
 
@@ -128,14 +122,10 @@ export default function Register() {
         }
       );
 
-      console.log("response: ", response);
-
       router.push("/login");
     } catch (err) {
       console.log("err: ", err);
     }
-
-    setIsLoading(false);
   };
 
   return (

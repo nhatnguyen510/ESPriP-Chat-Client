@@ -26,7 +26,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = () => {
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
   } = useForm<ChangePasswordDataType>({
     defaultValues: {
       old_password: "",
@@ -41,17 +41,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = () => {
 
   const { data: session, update } = useSession();
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const onSubmit: SubmitHandler<ChangePasswordDataType> = async (data) => {
-    console.log(data);
-
-    console.log({
-      master_key: deriveMasterKey(data.new_password),
-    });
-
-    setIsLoading(true);
-
     try {
       const updatedUser = await changePassword(axiosAuth, data);
 
@@ -68,11 +58,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = () => {
         toast.error(err.response?.data?.message);
       }
     }
-
-    setIsLoading(false);
   };
-
-  console.log(errors);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

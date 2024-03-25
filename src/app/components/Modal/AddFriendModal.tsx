@@ -35,6 +35,8 @@ import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import { FriendRequestProps } from "@/../types";
 import { useSession } from "next-auth/react";
+import socket from "@/../lib/socket";
+import { EmitEvent } from "@/../lib/enum";
 
 interface AddFriendModalProps {
   isOpen: boolean;
@@ -92,10 +94,11 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
       setSendingRequests((prev) => ({ ...prev, [userId]: false }));
 
       if (data) {
+        console.log("data: ", data);
         setSentFriendRequests?.((prev) => [...prev, data.accepted_user]);
-      }
 
-      console.log(data);
+        socket.emit(EmitEvent.SendFriendRequest, data);
+      }
     } catch (error) {
       if (error instanceof AxiosError) {
         toast.error(error.response?.data.message);

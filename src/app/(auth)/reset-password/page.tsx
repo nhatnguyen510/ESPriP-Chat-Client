@@ -15,7 +15,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function ResetPassword() {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -32,7 +31,7 @@ export default function ResetPassword() {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting: isLoading },
   } = useForm<ResetPasswordDataType>({
     defaultValues: {
       new_password: "",
@@ -43,8 +42,6 @@ export default function ResetPassword() {
   });
 
   const onSubmit: SubmitHandler<ResetPasswordDataType> = async (data) => {
-    setIsLoading(true);
-
     try {
       const { message } = await resetPassword(
         email as string,
@@ -57,11 +54,7 @@ export default function ResetPassword() {
         toast.error(err.response?.data?.message);
       }
     }
-
-    setIsLoading(false);
   };
-
-  console.log("searchParams: ", searchParams);
 
   return (
     <>
